@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
         widgetPhone.style.top = `${initialTop}px`;
     };
 
-    // Centraliza ao carregar e se a janela for redimensionada
+    // Centraliza au carregar e se a janela for redimensionada
     centralizarWidget();
     window.addEventListener('resize', () => {
         // Só re-centraliza se não tiver sido movido pelo usuário ainda
@@ -178,14 +178,16 @@ Queda: ${campoQueda.value}`;
     });
 
     btnLimpar.addEventListener('click', () => {
+        // Limpa os campos de texto e reseta os outros seletores, 
+        // mas deixa o campoAnalista intacto com o que já estava selecionado
         campoData.value = '';
         campoTicket.value = '';
         campoContato.selectedIndex = 0;
-        campoAnalista.selectedIndex = 0;
         campoDescricao.value = '';
         campoStatus.selectedIndex = 0;
         campoQueda.selectedIndex = 0;
         
+        // Salva o estado atual para que o nome do analista permaneça no localStorage
         salvarRascunho();
     });
 });

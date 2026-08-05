@@ -25,18 +25,14 @@ body {
     background-image: radial-gradient(#d1d5db 1px, transparent 1px);
     background-size: 20px 20px;
     height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 100vw;
     overflow: hidden;
+    position: relative;
 }
 
-/* Container que simula o Celular */
+/* Container do Celular sem regras de conflito */
 .widget-phone {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
-    
     width: calc(100vw - 40px);
     max-width: 360px;
     height: 750px;
@@ -48,14 +44,14 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    animation: slideUp 0.4s ease-out;
+    animation: fadeIn 0.3s ease-out;
     border: 1px solid #3b3b54;
     z-index: 1000;
 }
 
-@keyframes slideUp {
-    from { transform: translateY(50px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 /* Header do Celular */

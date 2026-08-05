@@ -17,13 +17,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const toastMessage = document.getElementById('toastMessage');
 
     // ==========================================
+    // CENTRALIZAÇÃO INICIAL SEM CONFLITO DE CSS
+    // ==========================================
+    const centralizarWidget = () => {
+        if (!widgetPhone) return;
+        const width = widgetPhone.offsetWidth || 360;
+        const height = widgetPhone.offsetHeight || 750;
+        
+        const initialLeft = Math.max(0, (window.innerWidth - width) / 2);
+        const initialTop = Math.max(0, (window.innerHeight - height) / 2);
+
+        widgetPhone.style.left = `${initialLeft}px`;
+        widgetPhone.style.top = `${initialTop}px`;
+    };
+
+    // Centraliza ao carregar e se a janela for redimensionada
+    centralizarWidget();
+    window.addEventListener('resize', () => {
+        // Só re-centraliza se não tiver sido movido pelo usuário ainda
+        if (!widgetPhone.dataset.moved) {
+            centralizarWidget();
+        }
+    });
+
+    // ==========================================
     // MÁSCARA CORRIGIDA E SIMPLIFICADA
     // ==========================================
     const formatarDataHora = (valor) => {
         if (!valor) return '';
         
         let v = valor.replace(/\D/g, ''); 
-        
         if (v.length > 12) v = v.substring(0, 12); 
 
         let formatted = '';
@@ -42,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================
-    // LÓGICA DE ARRASTAR A JANELA (Drag & Drop)
+    // LÓGICA DE ARRASTAR A JANELA (Drag & Drop Impecável)
     // ==========================================
     let isDragging = false;
     let offsetX = 0;
@@ -51,14 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (widgetHeader && widgetPhone) {
         widgetHeader.addEventListener('mousedown', (e) => {
             isDragging = true;
+            widgetPhone.dataset.moved = 'true'; // Marca que foi movido pelo usuário
+            
             const rect = widgetPhone.getBoundingClientRect();
-            
-            widgetPhone.style.bottom = 'auto';
-            widgetPhone.style.right = 'auto';
-            
-            widgetPhone.style.left = rect.left + 'px';
-            widgetPhone.style.top = rect.top + 'px';
-
             offsetX = e.clientX - rect.left;
             offsetY = e.clientY - rect.top;
             

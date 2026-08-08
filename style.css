@@ -37,7 +37,7 @@ body {
     max-width: 360px;
     height: 750px;
     max-height: calc(100vh - 40px);
-    
+
     background-color: var(--widget-bg);
     border-radius: 36px;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 0 0 8px #0f0f17;
@@ -92,6 +92,51 @@ body {
     pointer-events: none;
 }
 
+/* ========================================== */
+/* SELETOR DE MODO (Geral / Leroy Acionamento) */
+/* ========================================== */
+.tab-switcher {
+    display: flex;
+    gap: 6px;
+    padding: 12px 20px 0;
+    background-color: var(--widget-header);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tab-btn {
+    flex: 1;
+    background-color: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 10px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    border-radius: 10px 10px 0 0;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.tab-btn i {
+    font-size: 15px;
+}
+
+.tab-btn:hover {
+    color: var(--text-main);
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.tab-btn.active {
+    color: var(--primary);
+    border-bottom: 2px solid var(--primary);
+    background-color: var(--widget-bg);
+}
+
 /* Corpo do Formulario */
 .widget-body {
     flex: 1;
@@ -105,6 +150,16 @@ body {
 .widget-body::-webkit-scrollbar-track { background: var(--widget-bg); }
 .widget-body::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 10px; }
 
+/* Alterna entre formulário Geral e Leroy sem sair do mesmo widget */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.2s ease-out;
+}
+
 .form-group {
     margin-bottom: 15px;
 }
@@ -116,6 +171,12 @@ body {
     margin-bottom: 6px;
     font-weight: 500;
     margin-left: 4px;
+}
+
+.form-group label.label-secondary {
+    font-size: 11px;
+    font-style: italic;
+    opacity: 0.75;
 }
 
 .input-wrapper {

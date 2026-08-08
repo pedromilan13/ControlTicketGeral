@@ -15,14 +15,30 @@
         <div class="toast" id="toastMessage">
             <i class="mdi mdi-check-circle"></i> Copiado com sucesso!
         </div>
-        
+
         <header class="widget-header">
             <h2><i class="mdi mdi-headset"></i> Registro de Chamado</h2>
         </header>
 
+        <!-- ========================================== -->
+        <!-- SELETOR DE MODO (Geral / Leroy Acionamento) -->
+        <!-- ========================================== -->
+        <div class="tab-switcher">
+            <button class="tab-btn active" data-tab="geral" id="tabGeral">
+                <i class="mdi mdi-earth"></i> Geral
+            </button>
+            <button class="tab-btn" data-tab="leroy" id="tabLeroy">
+                <i class="mdi mdi-hammer-wrench"></i> Leroy Acionamento
+            </button>
+        </div>
+
         <div class="widget-body">
-            <form id="ticketForm">
-                
+
+            <!-- ========================================== -->
+            <!-- FORMULÁRIO GERAL (todas as operações)       -->
+            <!-- ========================================== -->
+            <form id="formGeral" class="tab-content active">
+
                 <div class="form-group">
                     <label>Data e Hora</label>
                     <div class="input-wrapper">
@@ -58,14 +74,14 @@
                         <select id="campoOperacao" class="form-control">
                             <option value="Votorantim">Votorantim</option>
                             <option value="Stellantis">Stellantis</option>
-                            <option value="Unimed">Unimed</option>
+                            <option value="Seguros Unimed">Seguros Unimed</option>
                             <option value="Enel">Enel</option>
-                            <option value="Leroy">Leroy</option>
+                            <option value="Leroy Merlin">Leroy Merlin</option>
                             <option value="Coruripe">Coruripe</option>
                             <option value="Unify">Unify</option>
                             <option value="Allianz">Allianz</option>
                             <option value="Messer">Messer</option>
-                            <option value="Indovinya">Indovinya</option>
+                            <option value="Oxiteno">Oxiteno</option>
                             <option value="Bull">Bull</option>
                             <option value="Amil">Amil</option>
                         </select>
@@ -84,7 +100,6 @@
                             <option value="Edgar Romero">Edgar Romero</option>
                             <option value="Carmen Leturia">Carmen Leturia</option>
                             <option value="Luana Martins">Luana Martins</option>
-                            <option value="Klein Crespo">Klein Crespo</option>
                         </select>
                     </div>
                 </div>
@@ -122,6 +137,104 @@
                 </div>
 
             </form>
+
+            <!-- ========================================== -->
+            <!-- FORMULÁRIO LEROY ACIONAMENTO (campos próprios) -->
+            <!-- ========================================== -->
+            <form id="formLeroy" class="tab-content">
+
+                <div class="form-group">
+                    <label>Ticket</label>
+                    <div class="input-wrapper">
+                        <i class="mdi mdi-ticket"></i>
+                        <input type="text" id="lrTicket" class="form-control" placeholder="Ticket" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Contato</label>
+                    <div class="input-wrapper">
+                        <i class="mdi mdi-phone-classic"></i>
+                        <select id="lrContato" class="form-control">
+                            <option value="Backlog">Backlog</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <div class="input-wrapper">
+                        <i class="mdi mdi-text-box-edit-outline"></i>
+                        <input type="text" id="lrDescricao" class="form-control" placeholder="Buscar ou digitar uma descrição..." autocomplete="off" list="listaDescricoesLeroy">
+                        <datalist id="listaDescricoesLeroy"></datalist>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Fila</label>
+                    <div class="input-wrapper">
+                        <i class="mdi mdi-format-list-bulleted"></i>
+                        <input type="text" id="lrFila" class="form-control" placeholder="Preenchida automaticamente" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Horário</label>
+                    <div class="input-wrapper">
+                        <i class="mdi mdi-clock-outline"></i>
+                        <input type="text" id="lrHorario" class="form-control" placeholder="DD/MM/AAAA HH:MM" autocomplete="off" maxlength="16">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Acionamento</label>
+                    <div class="input-wrapper">
+                        <i class="mdi mdi-bell-alert-outline"></i>
+                        <select id="lrAcionamentoBase" class="form-control">
+                            <option value="">Selecionar acionamento...</option>
+                            <option value="Acionado Thiago às {HORA}hrs">Thiago</option>
+                            <option value="Acionado Jesuino às {HORA}hrs">Jesuino</option>
+                            <option value="Acionado Mizael às {HORA}hrs">Mizael</option>
+                            <option value="Acionado Wagner às {HORA}hrs">Wagner</option>
+                            <option value="Acionado David às {HORA}hrs">David</option>
+                            <option value="Acionado Ricardo às {HORA}hrs">Ricardo</option>
+                            <option value="Acionado William às {HORA}hrs">William</option>
+                            <option value="Acionado Caroline às {HORA}hrs">Caroline</option>
+                            <option value="Acionado Bruno às {HORA}hrs">Bruno</option>
+                            <option value="Acionado Pierre às {HORA}hrs">Pierre</option>
+                            <option value="Sem acionamento - Monitoria">Sem acionamento - Monitoria</option>
+                            <option value="Encaminhado antes das 00:00hrs">Encaminhado antes das 00:00hrs</option>
+                            <option value="Encaminhado após 07:00hrs">Encaminhado após 07:00hrs</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="label-secondary">Texto final (edite só o horário se precisar)</label>
+                    <div class="input-wrapper">
+                        <i class="mdi mdi-text-box-check-outline"></i>
+                        <input type="text" id="lrAcionamento" class="form-control" placeholder="Selecione um acionamento acima" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Analista</label>
+                    <div class="input-wrapper">
+                        <i class="mdi mdi-account-tie"></i>
+                        <select id="lrAnalista" class="form-control">
+                            <option value="Sergio Dias">Sergio Dias</option>
+                            <option value="Pedro Milan">Pedro Milan</option>
+                            <option value="Carlos Neto">Carlos Neto</option>
+                            <option value="Nesser">Nesser</option>
+                            <option value="Edgar Romero">Edgar Romero</option>
+                            <option value="Carmen Leturia">Carmen Leturia</option>
+                            <option value="Luana Martins">Luana Martins</option>
+                        </select>
+                    </div>
+                </div>
+
+            </form>
+
         </div>
 
         <footer class="widget-footer">

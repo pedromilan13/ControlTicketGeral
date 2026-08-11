@@ -358,7 +358,7 @@ Queda: ${campoQueda.value}`;
 Contato: ${lrContato.value}
 Descrição: ${lrDescricao.value.trim() || 'Sem descrição.'}
 Fila: ${lrFila.value.trim() || 'N/A'}
-Horário: ${lrHorario.value || 'N/A'}
+Horario: ${lrHorario.value || 'N/A'}
 Acionamento: ${lrAcionamento.value.trim() || 'N/A'}
 Analista: ${lrAnalista.value}`;
     };

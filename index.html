@@ -21,14 +21,17 @@
         </header>
 
         <!-- ========================================== -->
-        <!-- SELETOR DE MODO (Geral / Leroy Acionamento) -->
+        <!-- SELETOR DE MODO (Geral / Leroy / Histórico) -->
         <!-- ========================================== -->
         <div class="tab-switcher">
             <button class="tab-btn active" data-tab="geral" id="tabGeral">
                 <i class="mdi mdi-earth"></i> Geral
             </button>
             <button class="tab-btn" data-tab="leroy" id="tabLeroy">
-                <i class="mdi mdi-hammer-wrench"></i> Leroy Acionamento
+                <i class="mdi mdi-hammer-wrench"></i> Leroy
+            </button>
+            <button class="tab-btn" data-tab="historico" id="tabHistorico">
+                <i class="mdi mdi-history"></i> Histórico
             </button>
         </div>
 
@@ -234,6 +237,30 @@
                 </div>
 
             </form>
+
+            <!-- ========================================== -->
+            <!-- HISTÓRICO (tudo que já foi copiado)         -->
+            <!-- ========================================== -->
+            <div id="formHistorico" class="tab-content">
+
+                <div class="hist-toolbar">
+                    <span class="hist-toolbar-label"><i class="mdi mdi-clipboard-text-clock-outline"></i> Chamados copiados</span>
+                    <button type="button" class="hist-clear-btn" id="btnLimparHistorico" title="Limpar todo o histórico">
+                        <i class="mdi mdi-delete-sweep-outline"></i> Limpar
+                    </button>
+                </div>
+
+                <div id="listaHistorico" class="hist-list">
+                    <!-- itens inseridos via JS -->
+                </div>
+
+                <div id="histVazio" class="hist-empty">
+                    <i class="mdi mdi-clipboard-off-outline"></i>
+                    <p>Nenhum chamado copiado ainda.</p>
+                    <span>Assim que você copiar um registro, ele aparece aqui.</span>
+                </div>
+
+            </div>
 
         </div>
 

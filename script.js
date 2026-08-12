@@ -27,9 +27,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const lrAcionamentoBase = document.getElementById('lrAcionamentoBase');
     const lrAnalista = document.getElementById('lrAnalista');
 
+    // Referências - Histórico
+    const listaHistorico = document.getElementById('listaHistorico');
+    const histVazio = document.getElementById('histVazio');
+    const btnLimparHistorico = document.getElementById('btnLimparHistorico');
+
     // Referências - Abas
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
+
+    // Mapa aba -> id do conteúdo (facilita adicionar novas abas no futuro)
+    const MAPA_ABAS = {
+        geral: 'formGeral',
+        leroy: 'formLeroy',
+        historico: 'formHistorico'
+    };
 
     // ==========================================
     // BASE DE CONHECIMENTO: Descrição -> Fila (Leroy Acionamento)
@@ -76,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
         DESCRICAO_FILA[normalizar(item.descricao)] = item.fila;
     });
 
-    // Controla qual modo está ativo: 'geral' ou 'leroy'
+    // Controla qual modo está ativo: 'geral', 'leroy' ou 'historico'
     let modoAtivo = 'geral';
 
     // ==========================================
@@ -114,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // TROCA DE ABA (Geral <-> Leroy Acionamento)
+    // TROCA DE ABA (Geral <-> Leroy <-> Histórico)
     // ==========================================
     const trocarAba = (tab) => {
         modoAtivo = tab;
@@ -124,9 +136,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         tabContents.forEach(content => {
-            const isTarget = content.id === (tab === 'geral' ? 'formGeral' : 'formLeroy');
+            const isTarget = content.id === MAPA_ABAS[tab];
             content.classList.toggle('active', isTarget);
         });
+
+        if (tab === 'historico') {
+            renderizarHistorico();
+        }
     };
 
     tabButtons.forEach(btn => {
@@ -378,8 +394,183 @@ Analista: ${lrAnalista.value}`;
         }
     };
 
+    // ==========================================
+    // HISTÓRICO - tudo que já foi copiado
+    // Guarda tanto o texto final quanto os campos originais,
+    // pra permitir recopiar ou restaurar o formulário depois.
+    // ==========================================
+    const HISTORICO_CHAVE = 'historicoChamadosPM';
+    const HISTORICO_LIMITE = 50;
+
+    const formatarDataExibicao = (timestamp) => {
+        const d = new Date(timestamp);
+        const dia = String(d.getDate()).padStart(2, '0');
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        return `${dia}/${mes} ${hh}:${mm}`;
+    };
+
+    const obterHistorico = () => {
+        try {
+            return JSON.parse(localStorage.getItem(HISTORICO_CHAVE)) || [];
+        } catch {
+            return [];
+        }
+    };
+
+    const salvarHistoricoCompleto = (lista) => {
+        localStorage.setItem(HISTORICO_CHAVE, JSON.stringify(lista));
+    };
+
+    // Monta o snapshot com base na aba ativa no momento da cópia
+    const montarRegistroHistorico = (texto) => {
+        if (modoAtivo === 'geral') {
+            return {
+                id: Date.now(),
+                tipo: 'geral',
+                timestamp: Date.now(),
+                ticket: campoTicket.value.trim() || 'N/A',
+                resumo: `${campoOperacao.value} · ${campoStatus.value}`,
+                texto,
+                campos: {
+                    data: campoData.value,
+                    ticket: campoTicket.value,
+                    contato: campoContato.value,
+                    operacao: campoOperacao.value,
+                    analista: campoAnalista.value,
+                    descricao: campoDescricao.value,
+                    status: campoStatus.value,
+                    queda: campoQueda.value
+                }
+            };
+        }
+        return {
+            id: Date.now(),
+            tipo: 'leroy',
+            timestamp: Date.now(),
+            ticket: lrTicket.value.trim() || 'N/A',
+            resumo: `${lrDescricao.value.trim() || 'Sem descrição'} · ${lrFila.value.trim() || 'N/A'}`,
+            texto,
+            campos: {
+                ticket: lrTicket.value,
+                contato: lrContato.value,
+                descricao: lrDescricao.value,
+                fila: lrFila.value,
+                horario: lrHorario.value,
+                acionamento: lrAcionamento.value,
+                analista: lrAnalista.value
+            }
+        };
+    };
+
+    const adicionarAoHistorico = (texto) => {
+        const registro = montarRegistroHistorico(texto);
+        const lista = obterHistorico();
+        lista.unshift(registro); // mais recente primeiro
+        if (lista.length > HISTORICO_LIMITE) lista.length = HISTORICO_LIMITE;
+        salvarHistoricoCompleto(lista);
+    };
+
+    const excluirDoHistorico = (id) => {
+        const lista = obterHistorico().filter(item => item.id !== id);
+        salvarHistoricoCompleto(lista);
+        renderizarHistorico();
+    };
+
+    const restaurarDoHistorico = (id) => {
+        const item = obterHistorico().find(i => i.id === id);
+        if (!item) return;
+
+        if (item.tipo === 'geral') {
+            campoData.value = formatarDataHora(item.campos.data || '');
+            campoTicket.value = item.campos.ticket || '';
+            campoContato.value = item.campos.contato || 'Telefone';
+            campoOperacao.value = item.campos.operacao || campoOperacao.value;
+            campoAnalista.value = item.campos.analista || campoAnalista.value;
+            campoDescricao.value = item.campos.descricao || '';
+            campoStatus.value = item.campos.status || 'Encaminhado';
+            campoQueda.value = item.campos.queda || 'N/A';
+            salvarRascunhoGeral();
+            trocarAba('geral');
+        } else {
+            lrTicket.value = item.campos.ticket || '';
+            lrDescricao.value = item.campos.descricao || '';
+            lrFila.value = item.campos.fila || '';
+            lrHorario.value = formatarDataHora(item.campos.horario || '');
+            lrAcionamento.value = item.campos.acionamento || '';
+            lrAnalista.value = item.campos.analista || lrAnalista.value;
+            salvarRascunhoLeroy();
+            trocarAba('leroy');
+        }
+
+        mostrarToast('Restaurado no formulário!');
+    };
+
+    const recopiarDoHistorico = (id) => {
+        const item = obterHistorico().find(i => i.id === id);
+        if (!item) return;
+        copiarTexto(item.texto);
+    };
+
+    const renderizarHistorico = () => {
+        const lista = obterHistorico();
+        listaHistorico.innerHTML = '';
+
+        histVazio.style.display = lista.length === 0 ? 'flex' : 'none';
+        listaHistorico.style.display = lista.length === 0 ? 'none' : 'flex';
+
+        lista.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'hist-item';
+            div.dataset.id = item.id;
+
+            const badgeClasse = item.tipo === 'geral' ? 'hist-badge-geral' : 'hist-badge-leroy';
+            const badgeTexto = item.tipo === 'geral' ? 'Geral' : 'Leroy';
+
+            div.innerHTML = `
+                <div class="hist-item-header">
+                    <span class="hist-badge ${badgeClasse}">${badgeTexto}</span>
+                    <span class="hist-ticket"><i class="mdi mdi-ticket-outline"></i> ${item.ticket}</span>
+                    <span class="hist-time">${formatarDataExibicao(item.timestamp)}</span>
+                </div>
+                <div class="hist-resumo">${item.resumo}</div>
+                <div class="hist-actions">
+                    <button type="button" class="hist-btn hist-recopiar" title="Copiar de novo">
+                        <i class="mdi mdi-content-copy"></i>
+                    </button>
+                    <button type="button" class="hist-btn hist-restaurar" title="Restaurar nos campos">
+                        <i class="mdi mdi-restore"></i>
+                    </button>
+                    <button type="button" class="hist-btn hist-excluir" title="Excluir do histórico">
+                        <i class="mdi mdi-trash-can-outline"></i>
+                    </button>
+                </div>
+            `;
+
+            div.querySelector('.hist-recopiar').addEventListener('click', () => recopiarDoHistorico(item.id));
+            div.querySelector('.hist-restaurar').addEventListener('click', () => restaurarDoHistorico(item.id));
+            div.querySelector('.hist-excluir').addEventListener('click', () => excluirDoHistorico(item.id));
+
+            listaHistorico.appendChild(div);
+        });
+    };
+
+    btnLimparHistorico.addEventListener('click', () => {
+        if (obterHistorico().length === 0) return;
+        salvarHistoricoCompleto([]);
+        renderizarHistorico();
+        mostrarToast('Histórico limpo!');
+    });
+
+    // ==========================================
+    // Botão Copiar: gera o texto, salva no histórico e copia
+    // ==========================================
     btnCopiar.addEventListener('click', () => {
+        if (modoAtivo === 'historico') return; // nada a copiar direto dessa aba
+
         const texto = modoAtivo === 'geral' ? gerarTextoGeral() : gerarTextoLeroy();
+        adicionarAoHistorico(texto);
         copiarTexto(texto);
     });
 
@@ -395,7 +586,7 @@ Analista: ${lrAnalista.value}`;
             campoStatus.selectedIndex = 0;
             campoQueda.selectedIndex = 0;
             salvarRascunhoGeral();
-        } else {
+        } else if (modoAtivo === 'leroy') {
             lrTicket.value = '';
             lrDescricao.value = '';
             lrFila.value = '';
@@ -405,4 +596,7 @@ Analista: ${lrAnalista.value}`;
             salvarRascunhoLeroy();
         }
     });
+
+    // Primeira renderização (caso o usuário já abra direto na aba histórico)
+    renderizarHistorico();
 });

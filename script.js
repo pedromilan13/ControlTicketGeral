@@ -82,6 +82,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const normalizar = (texto) => texto.trim().toLowerCase();
 
+    // Escapa HTML antes de injetar texto do usuário via innerHTML
+    // (Ticket, Descrição etc. podem conter qualquer caractere digitado)
+    const escaparHtml = (texto) => {
+        const div = document.createElement('div');
+        div.textContent = texto;
+        return div.innerHTML;
+    };
+
     // Índice de busca (chave normalizada -> fila), gerado a partir da base acima
     const DESCRICAO_FILA = {};
     BASE_DESCRICOES_LEROY.forEach(item => {
@@ -90,6 +98,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Controla qual modo está ativo: 'geral', 'leroy' ou 'historico'
     let modoAtivo = 'geral';
+
+    // ==========================================
+    // EVITAR SUBMIT ACIDENTAL (Enter nos campos)
+    // Os campos vivem dentro de <form> por semântica, mas esse app
+    // não envia nada via submit tradicional - sem isso, apertar Enter
+    // em qualquer campo recarregaria a página sem querer.
+    // ==========================================
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', (e) => e.preventDefault());
+    });
 
     // ==========================================
     // CENTRALIZAÇÃO INICIAL SEM CONFLITO DE CSS
@@ -143,6 +161,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tab === 'historico') {
             renderizarHistorico();
         }
+
+        // Copiar/Limpar não fazem nada útil na aba Histórico (ela tem
+        // suas próprias ações por item) - desabilita pra não parecer bug
+        const semAcaoNoHistorico = tab === 'historico';
+        btnCopiar.disabled = semAcaoNoHistorico;
+        btnLimpar.disabled = semAcaoNoHistorico;
+        btnCopiar.classList.toggle('btn-disabled', semAcaoNoHistorico);
+        btnLimpar.classList.toggle('btn-disabled', semAcaoNoHistorico);
     };
 
     tabButtons.forEach(btn => {
@@ -151,7 +177,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ==========================================
     // MÁSCARA DE DATA/HORA (Geral) - DD/MM/AAAA HH:MM
+    // Se o valor já vier pronto num formato completo reconhecido
+    // (colado de outro sistema, com segundos), a máscara não mexe
+    // nele - só formata quando a pessoa está digitando dígito a dígito.
     // ==========================================
+    const REGEX_ISO_COMPLETO = /^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/;
+    const REGEX_BR_COMPLETO = /^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}:\d{2}$/;
+
+    const pareceDataCompletaColada = (valor) => {
+        const v = valor.trim();
+        return REGEX_ISO_COMPLETO.test(v) || REGEX_BR_COMPLETO.test(v);
+    };
+
     const formatarDataHora = (valor) => {
         if (!valor) return '';
 
@@ -169,7 +206,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     campoData.addEventListener('input', (e) => {
-        e.target.value = formatarDataHora(e.target.value);
+        if (!pareceDataCompletaColada(e.target.value)) {
+            e.target.value = formatarDataHora(e.target.value);
+        }
         salvarRascunhoGeral();
     });
 
@@ -275,7 +314,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const carregarRascunhoGeral = () => {
         const rascunho = JSON.parse(localStorage.getItem('rascunhoChamadoPM'));
         if (rascunho) {
-            if (rascunho.data) campoData.value = formatarDataHora(rascunho.data);
+            if (rascunho.data) {
+                campoData.value = pareceDataCompletaColada(rascunho.data)
+                    ? rascunho.data
+                    : formatarDataHora(rascunho.data);
+            }
             campoTicket.value = rascunho.ticket || '';
             if (rascunho.contato) campoContato.value = rascunho.contato;
             if (rascunho.operacao) campoOperacao.value = rascunho.operacao;
@@ -483,7 +526,9 @@ Analista: ${lrAnalista.value}`;
         if (!item) return;
 
         if (item.tipo === 'geral') {
-            campoData.value = formatarDataHora(item.campos.data || '');
+            campoData.value = pareceDataCompletaColada(item.campos.data || '')
+                ? item.campos.data
+                : formatarDataHora(item.campos.data || '');
             campoTicket.value = item.campos.ticket || '';
             campoContato.value = item.campos.contato || 'Telefone';
             campoOperacao.value = item.campos.operacao || campoOperacao.value;
@@ -531,10 +576,10 @@ Analista: ${lrAnalista.value}`;
             div.innerHTML = `
                 <div class="hist-item-header">
                     <span class="hist-badge ${badgeClasse}">${badgeTexto}</span>
-                    <span class="hist-ticket"><i class="mdi mdi-ticket-outline"></i> ${item.ticket}</span>
+                    <span class="hist-ticket"><i class="mdi mdi-ticket-outline"></i> ${escaparHtml(item.ticket)}</span>
                     <span class="hist-time">${formatarDataExibicao(item.timestamp)}</span>
                 </div>
-                <div class="hist-resumo">${item.resumo}</div>
+                <div class="hist-resumo">${escaparHtml(item.resumo)}</div>
                 <div class="hist-actions">
                     <button type="button" class="hist-btn hist-recopiar" title="Copiar de novo">
                         <i class="mdi mdi-content-copy"></i>

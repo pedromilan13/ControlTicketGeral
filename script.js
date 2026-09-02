@@ -77,7 +77,10 @@ document.addEventListener('DOMContentLoaded', () => {
         { descricao: 'Catraca', fila: 'N2 RH' },
         { descricao: 'Divergência arquivo NOTFIS', fila: 'N2 SAP TM/LES' },
         { descricao: 'Estorno', fila: 'N2 SAP TM/LES' },
-        { descricao: 'Agendamento recebimento', fila: 'N2 SAP EWM' }
+        { descricao: 'Agendamento recebimento', fila: 'N2 SAP EWM' },
+        { descricao: 'Pedido nao integrado no ewm', fila: 'N2 SAP EWM' },
+        { descricao: 'NF Sem Inbound EWM', fila: 'N2 SAP MM' },
+        { descricao: 'Remessa fora do Cockpit', fila: 'N2 SAP TM/LES' }
     ];
 
     const normalizar = (texto) => texto.trim().toLowerCase();

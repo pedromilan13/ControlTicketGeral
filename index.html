@@ -5,18 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Assistente de Chamados</title>
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3">
-    <script src="script.js?v=4" defer></script>
+    <link rel="stylesheet" href="style.css?v=4">
+    <script src="script.js?v=5" defer></script>
 </head>
 <body>
 
-    <div class="widget-phone">
+    <div class="widget-phone" id="widgetPhone">
         <div class="notch"></div>
-        <div class="toast" id="toastMessage">
+        <div class="toast" id="toastMessage" role="status" aria-live="polite">
             <i class="mdi mdi-check-circle"></i> Copiado com sucesso!
         </div>
 
         <header class="widget-header">
+            <button type="button" class="btn-minimize" id="btnMinimizar" title="Minimizar">
+                <i class="mdi mdi-window-minimize" id="iconMinimizar"></i>
+            </button>
             <h2><i class="mdi mdi-headset"></i> Registro de Chamado</h2>
         </header>
 
@@ -43,7 +46,7 @@
             <form id="formGeral" class="tab-content active">
 
                 <div class="form-group">
-                    <label>Data e Hora</label>
+                    <label for="campoData">Data e Hora</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-calendar-clock"></i>
                         <input type="text" id="campoData" class="form-control" placeholder="DD/MM/AAAA HH:MM" autocomplete="off" maxlength="19">
@@ -51,15 +54,15 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Ticket</label>
+                    <label for="campoTicket">Ticket</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-ticket"></i>
-                        <input type="text" id="campoTicket" class="form-control" placeholder="Ticket" autocomplete="off">
+                        <input type="text" id="campoTicket" class="form-control" placeholder="Ticket" autocomplete="off" required>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Contato</label>
+                    <label for="campoContato">Contato</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-phone-classic"></i>
                         <select id="campoContato" class="form-control">
@@ -71,7 +74,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Operação</label>
+                    <label for="campoOperacao">Operação</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-domain"></i>
                         <select id="campoOperacao" class="form-control">
@@ -92,7 +95,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Analista</label>
+                    <label for="campoAnalista">Analista</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-account-tie"></i>
                         <select id="campoAnalista" class="form-control">
@@ -109,7 +112,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Descrição</label>
+                    <label for="campoDescricao">Descrição</label>
                     <div class="input-wrapper" style="align-items: flex-start;">
                         <i class="mdi mdi-text-box-edit-outline" style="top: 12px;"></i>
                         <textarea id="campoDescricao" class="form-control" placeholder="Descreva o problema ou solicitação..."></textarea>
@@ -117,7 +120,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Status</label>
+                    <label for="campoStatus">Status</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-list-status"></i>
                         <select id="campoStatus" class="form-control">
@@ -129,7 +132,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Queda</label>
+                    <label for="campoQueda">Queda</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-phone-hangup"></i>
                         <select id="campoQueda" class="form-control">
@@ -148,25 +151,22 @@
             <form id="formLeroy" class="tab-content">
 
                 <div class="form-group">
-                    <label>Ticket</label>
+                    <label for="lrTicket">Ticket</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-ticket"></i>
-                        <input type="text" id="lrTicket" class="form-control" placeholder="Ticket" autocomplete="off">
+                        <input type="text" id="lrTicket" class="form-control" placeholder="Ticket" autocomplete="off" required>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label>Contato</label>
-                    <div class="input-wrapper">
-                        <i class="mdi mdi-phone-classic"></i>
-                        <select id="lrContato" class="form-control">
-                            <option value="Backlog">Backlog</option>
-                        </select>
+                    <div class="static-badge">
+                        <i class="mdi mdi-phone-classic"></i> Backlog
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Descrição Subcategoria</label>
+                    <label for="lrDescricao">Descrição Subcategoria</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-text-box-edit-outline"></i>
                         <input type="text" id="lrDescricao" class="form-control" placeholder="Buscar ou digitar uma descrição..." autocomplete="off" list="listaDescricoesLeroy">
@@ -175,7 +175,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Fila</label>
+                    <label for="lrFila">Fila</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-format-list-bulleted"></i>
                         <input type="text" id="lrFila" class="form-control" placeholder="Preenchida automaticamente" autocomplete="off">
@@ -183,7 +183,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Horário</label>
+                    <label for="lrHorario">Horário</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-clock-outline"></i>
                         <input type="text" id="lrHorario" class="form-control" placeholder="DD/MM/AAAA HH:MM" autocomplete="off" maxlength="16">
@@ -191,7 +191,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Acionamento</label>
+                    <label for="lrAcionamentoBase">Acionamento</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-bell-alert-outline"></i>
                         <select id="lrAcionamentoBase" class="form-control">
@@ -214,7 +214,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="label-secondary">Texto final (edite só o horário se precisar)</label>
+                    <label for="lrAcionamento" class="label-secondary">Texto final (edite só o horário se precisar)</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-text-box-check-outline"></i>
                         <input type="text" id="lrAcionamento" class="form-control" placeholder="Selecione um acionamento acima" autocomplete="off">
@@ -222,7 +222,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Analista</label>
+                    <label for="lrAnalista">Analista</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-account-tie"></i>
                         <select id="lrAnalista" class="form-control">
@@ -248,8 +248,13 @@
                 <div class="hist-toolbar">
                     <span class="hist-toolbar-label"><i class="mdi mdi-clipboard-text-clock-outline"></i> Chamados copiados</span>
                     <button type="button" class="hist-clear-btn" id="btnLimparHistorico" title="Limpar todo o histórico">
-                        <i class="mdi mdi-delete-sweep-outline"></i> Limpar
+                        <i class="mdi mdi-delete-sweep-outline"></i> <span id="txtLimparHistorico">Limpar</span>
                     </button>
+                </div>
+
+                <div class="input-wrapper hist-search">
+                    <i class="mdi mdi-magnify"></i>
+                    <input type="text" id="campoBuscaHistorico" class="form-control" placeholder="Buscar por ticket ou descrição..." autocomplete="off">
                 </div>
 
                 <div id="listaHistorico" class="hist-list">
@@ -262,6 +267,12 @@
                     <span>Assim que você copiar um registro, ele aparece aqui.</span>
                 </div>
 
+                <div id="histSemResultado" class="hist-empty">
+                    <i class="mdi mdi-magnify-close"></i>
+                    <p>Nada encontrado.</p>
+                    <span>Tente buscar por outro ticket ou termo.</span>
+                </div>
+
             </div>
 
         </div>
@@ -270,7 +281,7 @@
             <button class="btn btn-danger" id="btnLimpar" title="Limpar Campos">
                 <i class="mdi mdi-trash-can-outline"></i>
             </button>
-            <button class="btn btn-primary" id="btnCopiar">
+            <button class="btn btn-primary" id="btnCopiar" title="Copiar (Ctrl+Enter)">
                 <i class="mdi mdi-content-copy"></i> Copiar
             </button>
         </footer>

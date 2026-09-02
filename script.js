@@ -1,11 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // Referências gerais do widget
-    const widgetPhone = document.querySelector('.widget-phone');
+    const widgetPhone = document.getElementById('widgetPhone');
     const widgetHeader = document.querySelector('.widget-header');
     const toastMessage = document.getElementById('toastMessage');
     const btnCopiar = document.getElementById('btnCopiar');
     const btnLimpar = document.getElementById('btnLimpar');
+    const btnMinimizar = document.getElementById('btnMinimizar');
+    const iconMinimizar = document.getElementById('iconMinimizar');
 
     // Referências - Formulário Geral
     const campoData = document.getElementById('campoData');
@@ -18,8 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const campoQueda = document.getElementById('campoQueda');
 
     // Referências - Formulário Leroy Acionamento
+    // (Contato agora é fixo "Backlog" - deixou de ser um <select> por não
+    // ter nenhuma outra opção real; ver CONTATO_LEROY abaixo)
+    const CONTATO_LEROY = 'Backlog';
     const lrTicket = document.getElementById('lrTicket');
-    const lrContato = document.getElementById('lrContato');
     const lrDescricao = document.getElementById('lrDescricao');
     const lrFila = document.getElementById('lrFila');
     const lrHorario = document.getElementById('lrHorario');
@@ -30,7 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Referências - Histórico
     const listaHistorico = document.getElementById('listaHistorico');
     const histVazio = document.getElementById('histVazio');
+    const histSemResultado = document.getElementById('histSemResultado');
     const btnLimparHistorico = document.getElementById('btnLimparHistorico');
+    const txtLimparHistorico = document.getElementById('txtLimparHistorico');
+    const campoBuscaHistorico = document.getElementById('campoBuscaHistorico');
 
     // Referências - Abas
     const tabButtons = document.querySelectorAll('.tab-btn');
@@ -113,8 +120,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================
-    // CENTRALIZAÇÃO INICIAL SEM CONFLITO DE CSS
+    // POSIÇÃO E ESTADO MINIMIZADO - persistidos entre sessões
     // ==========================================
+    const POSICAO_CHAVE = 'posicaoWidgetPM';
+    const MINIMIZADO_CHAVE = 'minimizadoWidgetPM';
+
+    const salvarPosicao = (left, top) => {
+        localStorage.setItem(POSICAO_CHAVE, JSON.stringify({ left, top }));
+    };
+
     const centralizarWidget = () => {
         if (!widgetPhone) return;
         const width = widgetPhone.offsetWidth || 360;
@@ -127,12 +141,51 @@ document.addEventListener('DOMContentLoaded', () => {
         widgetPhone.style.top = `${initialTop}px`;
     };
 
-    centralizarWidget();
+    const restaurarPosicao = () => {
+        try {
+            const salva = JSON.parse(localStorage.getItem(POSICAO_CHAVE));
+            if (salva && typeof salva.left === 'number' && typeof salva.top === 'number') {
+                const maxLeft = Math.max(0, window.innerWidth - widgetPhone.offsetWidth);
+                const maxTop = Math.max(0, window.innerHeight - widgetPhone.offsetHeight);
+                widgetPhone.style.left = `${Math.min(Math.max(0, salva.left), maxLeft)}px`;
+                widgetPhone.style.top = `${Math.min(Math.max(0, salva.top), maxTop)}px`;
+                widgetPhone.dataset.moved = 'true';
+                return true;
+            }
+        } catch {
+            // localStorage corrompido ou vazio - ignora e centraliza normalmente
+        }
+        return false;
+    };
+
+    if (!restaurarPosicao()) {
+        centralizarWidget();
+    }
+
     window.addEventListener('resize', () => {
         if (!widgetPhone.dataset.moved) {
             centralizarWidget();
         }
     });
+
+    // ==========================================
+    // MINIMIZAR / RESTAURAR
+    // Colapsa o widget pra só o header, pra não ficar cobrindo a tela
+    // de trabalho por trás quando não está em uso.
+    // ==========================================
+    const aplicarMinimizado = (minimizado) => {
+        widgetPhone.classList.toggle('minimized', minimizado);
+        iconMinimizar.className = minimizado ? 'mdi mdi-window-restore' : 'mdi mdi-window-minimize';
+        btnMinimizar.title = minimizado ? 'Restaurar' : 'Minimizar';
+        localStorage.setItem(MINIMIZADO_CHAVE, minimizado ? '1' : '0');
+    };
+
+    btnMinimizar.addEventListener('click', (e) => {
+        e.stopPropagation();
+        aplicarMinimizado(!widgetPhone.classList.contains('minimized'));
+    });
+
+    aplicarMinimizado(localStorage.getItem(MINIMIZADO_CHAVE) === '1');
 
     // ==========================================
     // POPULAR DATALIST DE DESCRIÇÕES (Leroy Acionamento)
@@ -270,44 +323,71 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================
-    // LÓGICA DE ARRASTAR A JANELA (Drag & Drop Impecável)
+    // LÓGICA DE ARRASTAR A JANELA (mouse + toque)
     // ==========================================
     let isDragging = false;
     let offsetX = 0;
     let offsetY = 0;
 
+    const iniciarArrasto = (clientX, clientY) => {
+        isDragging = true;
+        widgetPhone.dataset.moved = 'true';
+
+        const rect = widgetPhone.getBoundingClientRect();
+        offsetX = clientX - rect.left;
+        offsetY = clientY - rect.top;
+
+        document.body.style.userSelect = 'none';
+    };
+
+    const moverArrasto = (clientX, clientY) => {
+        if (!isDragging) return;
+
+        let newLeft = clientX - offsetX;
+        let newTop = clientY - offsetY;
+
+        const maxLeft = window.innerWidth - widgetPhone.offsetWidth;
+        const maxTop = window.innerHeight - widgetPhone.offsetHeight;
+
+        newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+        newTop = Math.max(0, Math.min(newTop, maxTop));
+
+        widgetPhone.style.left = `${newLeft}px`;
+        widgetPhone.style.top = `${newTop}px`;
+    };
+
+    const finalizarArrasto = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        document.body.style.userSelect = '';
+
+        const rect = widgetPhone.getBoundingClientRect();
+        salvarPosicao(rect.left, rect.top);
+    };
+
     if (widgetHeader && widgetPhone) {
+        // Mouse (desktop)
         widgetHeader.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            widgetPhone.dataset.moved = 'true';
-
-            const rect = widgetPhone.getBoundingClientRect();
-            offsetX = e.clientX - rect.left;
-            offsetY = e.clientY - rect.top;
-
-            document.body.style.userSelect = 'none';
+            if (e.target.closest('.btn-minimize')) return;
+            iniciarArrasto(e.clientX, e.clientY);
         });
+        document.addEventListener('mousemove', (e) => moverArrasto(e.clientX, e.clientY));
+        document.addEventListener('mouseup', finalizarArrasto);
 
-        document.addEventListener('mousemove', (e) => {
+        // Toque (tablet/notebook touchscreen)
+        widgetHeader.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.btn-minimize')) return;
+            const toque = e.touches[0];
+            iniciarArrasto(toque.clientX, toque.clientY);
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
+            const toque = e.touches[0];
+            moverArrasto(toque.clientX, toque.clientY);
+        }, { passive: true });
 
-            let newLeft = e.clientX - offsetX;
-            let newTop = e.clientY - offsetY;
-
-            const maxLeft = window.innerWidth - widgetPhone.offsetWidth;
-            const maxTop = window.innerHeight - widgetPhone.offsetHeight;
-
-            newLeft = Math.max(0, Math.min(newLeft, maxLeft));
-            newTop = Math.max(0, Math.min(newTop, maxTop));
-
-            widgetPhone.style.left = `${newLeft}px`;
-            widgetPhone.style.top = `${newTop}px`;
-        });
-
-        document.addEventListener('mouseup', () => {
-            isDragging = false;
-            document.body.style.userSelect = '';
-        });
+        document.addEventListener('touchend', finalizarArrasto);
     }
 
     // ==========================================
@@ -371,7 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const salvarRascunhoLeroy = () => {
         const dados = {
             ticket: lrTicket.value,
-            contato: lrContato.value,
+            contato: CONTATO_LEROY,
             descricao: lrDescricao.value,
             fila: lrFila.value,
             horario: lrHorario.value,
@@ -393,12 +473,38 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // TOAST
     // ==========================================
-    const mostrarToast = (mensagem) => {
-        toastMessage.innerHTML = `<i class="mdi mdi-check-circle"></i> ${mensagem}`;
+    const mostrarToast = (mensagem, tipo = 'sucesso') => {
+        const icone = tipo === 'erro' ? 'mdi-alert-circle' : 'mdi-check-circle';
+        toastMessage.innerHTML = `<i class="mdi ${icone}"></i> ${mensagem}`;
+        toastMessage.classList.toggle('toast-error', tipo === 'erro');
         toastMessage.classList.add('show');
         setTimeout(() => {
             toastMessage.classList.remove('show');
         }, 3000);
+    };
+
+    // ==========================================
+    // VALIDAÇÃO ANTES DE COPIAR
+    // Evita mandar pro Teams um registro sem Ticket preenchido -
+    // destaca o campo e cancela a cópia em vez de deixar passar em branco.
+    // ==========================================
+    const sinalizarCampoVazio = (campo) => {
+        campo.classList.remove('field-error');
+        // Força reflow pra permitir repetir a animação em cliques seguidos
+        void campo.offsetWidth;
+        campo.classList.add('field-error');
+        campo.focus();
+        setTimeout(() => campo.classList.remove('field-error'), 900);
+    };
+
+    const validarAntesDeCopiar = () => {
+        const campoTicketAtivo = modoAtivo === 'geral' ? campoTicket : lrTicket;
+        if (!campoTicketAtivo.value.trim()) {
+            sinalizarCampoVazio(campoTicketAtivo);
+            mostrarToast('Preencha o Ticket antes de copiar', 'erro');
+            return false;
+        }
+        return true;
     };
 
     // ==========================================
@@ -417,7 +523,7 @@ Queda: ${campoQueda.value}`;
 
     const gerarTextoLeroy = () => {
         return `Ticket: ${lrTicket.value.trim() || 'N/A'}
-Contato: ${lrContato.value}
+Contato: ${CONTATO_LEROY}
 Descrição: ${lrDescricao.value.trim() || 'Sem descrição.'}
 Fila: ${lrFila.value.trim() || 'N/A'}
 Horario: ${lrHorario.value || 'N/A'}
@@ -428,15 +534,15 @@ Analista: ${lrAnalista.value}`;
     const copiarTexto = async (texto) => {
         try {
             await navigator.clipboard.writeText(texto);
-            mostrarToast("Copiado e pronto pro Teams!");
+            mostrarToast('Copiado e pronto pro Teams!');
         } catch (err) {
-            const textArea = document.createElement("textarea");
+            const textArea = document.createElement('textarea');
             textArea.value = texto;
             document.body.appendChild(textArea);
             textArea.select();
-            document.execCommand("Copy");
+            document.execCommand('Copy');
             textArea.remove();
-            mostrarToast("Copiado e pronto pro Teams!");
+            mostrarToast('Copiado e pronto pro Teams!');
         }
     };
 
@@ -500,7 +606,7 @@ Analista: ${lrAnalista.value}`;
             texto,
             campos: {
                 ticket: lrTicket.value,
-                contato: lrContato.value,
+                contato: CONTATO_LEROY,
                 descricao: lrDescricao.value,
                 fila: lrFila.value,
                 horario: lrHorario.value,
@@ -561,12 +667,30 @@ Analista: ${lrAnalista.value}`;
         copiarTexto(item.texto);
     };
 
+    // Filtra o histórico pelo termo digitado (ticket ou resumo/descrição)
+    const filtrarHistorico = (lista, termo) => {
+        const chave = normalizar(termo || '');
+        if (!chave) return lista;
+        return lista.filter(item =>
+            normalizar(item.ticket).includes(chave) ||
+            normalizar(item.resumo).includes(chave)
+        );
+    };
+
     const renderizarHistorico = () => {
-        const lista = obterHistorico();
+        const listaCompleta = obterHistorico();
+        const termo = campoBuscaHistorico.value;
+        const lista = filtrarHistorico(listaCompleta, termo);
+
         listaHistorico.innerHTML = '';
 
-        histVazio.style.display = lista.length === 0 ? 'flex' : 'none';
+        const semNadaCadastrado = listaCompleta.length === 0;
+        const semResultadoBusca = !semNadaCadastrado && lista.length === 0;
+
+        histVazio.style.display = semNadaCadastrado ? 'flex' : 'none';
+        histSemResultado.style.display = semResultadoBusca ? 'flex' : 'none';
         listaHistorico.style.display = lista.length === 0 ? 'none' : 'flex';
+        campoBuscaHistorico.parentElement.style.display = semNadaCadastrado ? 'none' : 'flex';
 
         lista.forEach(item => {
             const div = document.createElement('div');
@@ -604,22 +728,62 @@ Analista: ${lrAnalista.value}`;
         });
     };
 
+    campoBuscaHistorico.addEventListener('input', renderizarHistorico);
+
+    // ==========================================
+    // LIMPAR HISTÓRICO - com confirmação de 2 cliques
+    // Primeiro clique só avisa; o botão muda de cor/texto por 3s.
+    // Um segundo clique dentro desse tempo confirma a exclusão.
+    // Evita apagar 50 registros por engano com um único clique.
+    // ==========================================
+    let aguardandoConfirmacaoLimpeza = false;
+    let timeoutConfirmacaoLimpeza = null;
+
+    const resetarConfirmacaoLimpeza = () => {
+        aguardandoConfirmacaoLimpeza = false;
+        btnLimparHistorico.classList.remove('confirming');
+        txtLimparHistorico.textContent = 'Limpar';
+        clearTimeout(timeoutConfirmacaoLimpeza);
+    };
+
     btnLimparHistorico.addEventListener('click', () => {
         if (obterHistorico().length === 0) return;
+
+        if (!aguardandoConfirmacaoLimpeza) {
+            aguardandoConfirmacaoLimpeza = true;
+            btnLimparHistorico.classList.add('confirming');
+            txtLimparHistorico.textContent = 'Confirmar?';
+            timeoutConfirmacaoLimpeza = setTimeout(resetarConfirmacaoLimpeza, 3000);
+            return;
+        }
+
         salvarHistoricoCompleto([]);
+        resetarConfirmacaoLimpeza();
         renderizarHistorico();
         mostrarToast('Histórico limpo!');
     });
 
     // ==========================================
-    // Botão Copiar: gera o texto, salva no histórico e copia
+    // Botão Copiar: valida, gera o texto, salva no histórico e copia
     // ==========================================
-    btnCopiar.addEventListener('click', () => {
+    const executarCopia = () => {
         if (modoAtivo === 'historico') return; // nada a copiar direto dessa aba
+        if (!validarAntesDeCopiar()) return;
 
         const texto = modoAtivo === 'geral' ? gerarTextoGeral() : gerarTextoLeroy();
         adicionarAoHistorico(texto);
         copiarTexto(texto);
+    };
+
+    btnCopiar.addEventListener('click', executarCopia);
+
+    // Atalho Ctrl+Enter (ou Cmd+Enter no Mac) para copiar sem tirar a mão do teclado
+    document.addEventListener('keydown', (e) => {
+        const teclaCopiar = (e.ctrlKey || e.metaKey) && e.key === 'Enter';
+        if (teclaCopiar && !btnCopiar.disabled) {
+            e.preventDefault();
+            executarCopia();
+        }
     });
 
     // ==========================================

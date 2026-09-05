@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Assistente de Chamados</title>
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=5">
-    <script src="script.js?v=6" defer></script>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
 </head>
 <body>
 
@@ -23,9 +23,6 @@
             <h2><i class="mdi mdi-headset"></i> Registro de Chamado</h2>
         </header>
 
-        <!-- ========================================== -->
-        <!-- SELETOR DE MODO (Geral / Leroy / Histórico) -->
-        <!-- ========================================== -->
         <div class="tab-switcher">
             <button class="tab-btn active" data-tab="geral" id="tabGeral">
                 <i class="mdi mdi-earth"></i> Geral
@@ -39,17 +36,14 @@
         </div>
 
         <div class="widget-body">
-
-            <!-- ========================================== -->
-            <!-- FORMULÁRIO GERAL (todas as operações)       -->
-            <!-- ========================================== -->
+            <!-- ABA GERAL -->
             <form id="formGeral" class="tab-content active">
-
                 <div class="form-group">
                     <label for="campoData">Data e Hora</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-calendar-clock"></i>
                         <input type="text" id="campoData" class="form-control" placeholder="DD/MM/AAAA HH:MM" autocomplete="off" maxlength="19">
+                        <button type="button" class="btn-agora" id="btnAgoraGeral" title="Preencher horário atual">Agora</button>
                     </div>
                 </div>
 
@@ -57,7 +51,7 @@
                     <label for="campoTicket">Ticket</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-ticket"></i>
-                        <input type="text" id="campoTicket" class="form-control" placeholder="Ticket" autocomplete="off" required>
+                        <input type="text" id="campoTicket" class="form-control" placeholder="Número do ticket" autocomplete="off" required>
                     </div>
                 </div>
 
@@ -113,8 +107,8 @@
 
                 <div class="form-group">
                     <label for="campoDescricao">Descrição</label>
-                    <div class="input-wrapper" style="align-items: flex-start;">
-                        <i class="mdi mdi-text-box-edit-outline" style="top: 12px;"></i>
+                    <div class="input-wrapper align-top">
+                        <i class="mdi mdi-text-box-edit-outline icon-top"></i>
                         <textarea id="campoDescricao" class="form-control" placeholder="Descreva o problema ou solicitação..."></textarea>
                     </div>
                 </div>
@@ -142,19 +136,15 @@
                         </select>
                     </div>
                 </div>
-
             </form>
 
-            <!-- ========================================== -->
-            <!-- FORMULÁRIO LEROY ACIONAMENTO (campos próprios) -->
-            <!-- ========================================== -->
+            <!-- ABA LEROY -->
             <form id="formLeroy" class="tab-content">
-
                 <div class="form-group">
                     <label for="lrTicket">Ticket</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-ticket"></i>
-                        <input type="text" id="lrTicket" class="form-control" placeholder="Ticket" autocomplete="off" required>
+                        <input type="text" id="lrTicket" class="form-control" placeholder="Número do ticket" autocomplete="off" required>
                     </div>
                 </div>
 
@@ -182,12 +172,12 @@
                     </div>
                 </div>
 
-                <!-- Corrigido maxlength para 19 -->
                 <div class="form-group">
                     <label for="lrHorario">Horário</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-clock-outline"></i>
                         <input type="text" id="lrHorario" class="form-control" placeholder="DD/MM/AAAA HH:MM" autocomplete="off" maxlength="19">
+                        <button type="button" class="btn-agora" id="btnAgoraLeroy" title="Preencher horário atual">Agora</button>
                     </div>
                 </div>
 
@@ -238,52 +228,43 @@
                         </select>
                     </div>
                 </div>
-
             </form>
 
-            <!-- ========================================== -->
-            <!-- HISTÓRICO (tudo que já foi copiado)         -->
-            <!-- ========================================== -->
+            <!-- ABA HISTÓRICO -->
             <div id="formHistorico" class="tab-content">
-
                 <div class="hist-toolbar">
                     <span class="hist-toolbar-label"><i class="mdi mdi-clipboard-text-clock-outline"></i> Chamados copiados</span>
                     <button type="button" class="hist-clear-btn" id="btnLimparHistorico" title="Limpar todo o histórico">
                         <i class="mdi mdi-delete-sweep-outline"></i> <span id="txtLimparHistorico">Limpar</span>
                     </button>
                 </div>
-
                 <div class="input-wrapper hist-search">
                     <i class="mdi mdi-magnify"></i>
                     <input type="text" id="campoBuscaHistorico" class="form-control" placeholder="Buscar por ticket ou descrição..." autocomplete="off">
                 </div>
-
-                <div id="listaHistorico" class="hist-list">
-                    <!-- itens inseridos via JS -->
-                </div>
-
+                <div id="listaHistorico" class="hist-list"></div>
                 <div id="histVazio" class="hist-empty">
                     <i class="mdi mdi-clipboard-off-outline"></i>
                     <p>Nenhum chamado copiado ainda.</p>
                     <span>Assim que você copiar um registro, ele aparece aqui.</span>
                 </div>
-
                 <div id="histSemResultado" class="hist-empty">
                     <i class="mdi mdi-magnify-close"></i>
                     <p>Nada encontrado.</p>
                     <span>Tente buscar por outro ticket ou termo.</span>
                 </div>
-
             </div>
-
         </div>
 
         <footer class="widget-footer">
             <button class="btn btn-danger" id="btnLimpar" title="Limpar Campos">
                 <i class="mdi mdi-trash-can-outline"></i>
             </button>
+            <button class="btn btn-secondary" id="btnCopiarGeralLeroy" title="Gerar template para o canal Geral" style="display: none;">
+                <i class="mdi mdi-earth"></i> P/ Geral
+            </button>
             <button class="btn btn-primary" id="btnCopiar" title="Copiar (Ctrl+Enter)">
-                <i class="mdi mdi-content-copy"></i> Copiar
+                <i class="mdi mdi-content-copy" id="iconBtnCopiar"></i> <span id="txtBtnCopiar">Copiar</span>
             </button>
         </footer>
     </div>

@@ -11,7 +11,8 @@
     --danger: #f38ba8;
     --danger-hover: #eba0ac;
     --success: #a6e3a1;
-    --leroy-color: #fab387;
+    --leroy-color: #94e6ac;
+    --leroy-color-hover: #b0f0c4;
 }
 
 * {
@@ -48,7 +49,17 @@ body {
     animation: fadeIn 0.3s ease-out;
     border: 1px solid #3b3b54;
     z-index: 1000;
-    transition: height 0.25s ease, max-height 0.25s ease;
+    transition: height 0.25s ease, max-height 0.25s ease, border-color 0.3s ease;
+}
+
+/* ==========================================
+   MODO LEROY - troca a identidade de cor do widget
+   INTEIRO enquanto essa aba está ativa
+   ========================================== */
+.widget-phone.modo-leroy {
+    --primary: var(--leroy-color);
+    --primary-hover: var(--leroy-color-hover);
+    border-color: rgba(148, 230, 172, 0.55);
 }
 
 /* Estado minimizado: só o header fica visível */
@@ -116,6 +127,7 @@ body {
     justify-content: center;
     gap: 8px;
     pointer-events: none;
+    transition: color 0.25s ease;
 }
 
 .btn-minimize {
@@ -260,6 +272,10 @@ body {
     box-shadow: 0 0 0 3px rgba(137, 180, 250, 0.15);
 }
 
+.widget-phone.modo-leroy .form-control:focus {
+    box-shadow: 0 0 0 3px rgba(148, 230, 172, 0.2);
+}
+
 /* Estado de campo obrigatório vazio, sinalizado ao tentar copiar */
 .form-control.field-error {
     border-color: var(--danger);
@@ -302,7 +318,7 @@ textarea.form-control {
 }
 
 /* ========================================== */
-/* HISTÓRICO                                   */
+/* HISTÓRICO                                  */
 /* ========================================== */
 .hist-toolbar {
     display: flex;
@@ -383,13 +399,13 @@ textarea.form-control {
 }
 
 .hist-badge-geral {
-    color: var(--primary);
+    color: #89b4fa;
     background-color: rgba(137, 180, 250, 0.15);
 }
 
 .hist-badge-leroy {
     color: var(--leroy-color);
-    background-color: rgba(250, 179, 135, 0.15);
+    background-color: rgba(148, 230, 172, 0.15);
 }
 
 .hist-ticket {
@@ -447,8 +463,8 @@ textarea.form-control {
 }
 
 .hist-btn.hist-recopiar:hover {
-    color: var(--primary);
-    border-color: var(--primary);
+    color: #89b4fa;
+    border-color: #89b4fa;
 }
 
 .hist-btn.hist-restaurar:hover {
@@ -561,6 +577,7 @@ textarea.form-control {
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     z-index: 100;
     white-space: nowrap;
+    max-width: calc(100% - 40px);
 }
 
 .toast.show {

@@ -20,8 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const campoQueda = document.getElementById('campoQueda');
 
     // Referências - Formulário Leroy Acionamento
-    // (Contato agora é fixo "Backlog" - deixou de ser um <select> por não
-    // ter nenhuma outra opção real; ver CONTATO_LEROY abaixo)
     const CONTATO_LEROY = 'Backlog';
     const lrTicket = document.getElementById('lrTicket');
     const lrDescricao = document.getElementById('lrDescricao');
@@ -50,10 +48,14 @@ document.addEventListener('DOMContentLoaded', () => {
         historico: 'formHistorico'
     };
 
+    // Rótulo exato de cada tipo de registro
+    const ROTULOS_TIPO = {
+        geral: 'Passagem de Turno',
+        leroy: 'Acionamento Leroy'
+    };
+
     // ==========================================
     // BASE DE CONHECIMENTO: Descrição -> Fila (Leroy Acionamento)
-    // Fonte única: usada tanto para popular o dropdown quanto para o
-    // preenchimento automático da Fila. Editar só aqui.
     // ==========================================
     const BASE_DESCRICOES_LEROY = [
         { descricao: 'Lentidão p/ liberar remessa', fila: 'N2 SAP TM/LES' },
@@ -92,35 +94,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const normalizar = (texto) => texto.trim().toLowerCase();
 
-    // Escapa HTML antes de injetar texto do usuário via innerHTML
-    // (Ticket, Descrição etc. podem conter qualquer caractere digitado)
+    // Escapa HTML contra XSS
     const escaparHtml = (texto) => {
         const div = document.createElement('div');
         div.textContent = texto;
         return div.innerHTML;
     };
 
-    // Índice de busca (chave normalizada -> fila), gerado a partir da base acima
+    // Índice de busca
     const DESCRICAO_FILA = {};
     BASE_DESCRICOES_LEROY.forEach(item => {
         DESCRICAO_FILA[normalizar(item.descricao)] = item.fila;
     });
 
-    // Controla qual modo está ativo: 'geral', 'leroy' ou 'historico'
     let modoAtivo = 'geral';
 
-    // ==========================================
-    // EVITAR SUBMIT ACIDENTAL (Enter nos campos)
-    // Os campos vivem dentro de <form> por semântica, mas esse app
-    // não envia nada via submit tradicional - sem isso, apertar Enter
-    // em qualquer campo recarregaria a página sem querer.
-    // ==========================================
+    // Evitar Submit Acidental
     document.querySelectorAll('form').forEach(form => {
         form.addEventListener('submit', (e) => e.preventDefault());
     });
 
     // ==========================================
-    // POSIÇÃO E ESTADO MINIMIZADO - persistidos entre sessões
+    // POSIÇÃO E ESTADO MINIMIZADO
     // ==========================================
     const POSICAO_CHAVE = 'posicaoWidgetPM';
     const MINIMIZADO_CHAVE = 'minimizadoWidgetPM';
@@ -153,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return true;
             }
         } catch {
-            // localStorage corrompido ou vazio - ignora e centraliza normalmente
+            // Ignora se corrompido
         }
         return false;
     };
@@ -162,17 +157,21 @@ document.addEventListener('DOMContentLoaded', () => {
         centralizarWidget();
     }
 
+    // CORREÇÃO: Mantém widget dentro da tela ao redimensionar
     window.addEventListener('resize', () => {
         if (!widgetPhone.dataset.moved) {
             centralizarWidget();
+        } else {
+            const maxLeft = Math.max(0, window.innerWidth - widgetPhone.offsetWidth);
+            const maxTop = Math.max(0, window.innerHeight - widgetPhone.offsetHeight);
+            const currentLeft = parseInt(widgetPhone.style.left, 10) || 0;
+            const currentTop = parseInt(widgetPhone.style.top, 10) || 0;
+            
+            widgetPhone.style.left = `${Math.min(currentLeft, maxLeft)}px`;
+            widgetPhone.style.top = `${Math.min(currentTop, maxTop)}px`;
         }
     });
 
-    // ==========================================
-    // MINIMIZAR / RESTAURAR
-    // Colapsa o widget pra só o header, pra não ficar cobrindo a tela
-    // de trabalho por trás quando não está em uso.
-    // ==========================================
     const aplicarMinimizado = (minimizado) => {
         widgetPhone.classList.toggle('minimized', minimizado);
         iconMinimizar.className = minimizado ? 'mdi mdi-window-restore' : 'mdi mdi-window-minimize';
@@ -187,9 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     aplicarMinimizado(localStorage.getItem(MINIMIZADO_CHAVE) === '1');
 
-    // ==========================================
-    // POPULAR DATALIST DE DESCRIÇÕES (Leroy Acionamento)
-    // ==========================================
+    // Popular Datalist Leroy
     const listaDescricoesLeroy = document.getElementById('listaDescricoesLeroy');
     if (listaDescricoesLeroy) {
         BASE_DESCRICOES_LEROY.forEach(item => {
@@ -200,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // TROCA DE ABA (Geral <-> Leroy <-> Histórico)
+    // TROCA DE ABA
     // ==========================================
     const trocarAba = (tab) => {
         modoAtivo = tab;
@@ -214,12 +211,12 @@ document.addEventListener('DOMContentLoaded', () => {
             content.classList.toggle('active', isTarget);
         });
 
+        widgetPhone.classList.toggle('modo-leroy', tab === 'leroy');
+
         if (tab === 'historico') {
             renderizarHistorico();
         }
 
-        // Copiar/Limpar não fazem nada útil na aba Histórico (ela tem
-        // suas próprias ações por item) - desabilita pra não parecer bug
         const semAcaoNoHistorico = tab === 'historico';
         btnCopiar.disabled = semAcaoNoHistorico;
         btnLimpar.disabled = semAcaoNoHistorico;
@@ -232,13 +229,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================
-    // MÁSCARA DE DATA/HORA (Geral) - DD/MM/AAAA HH:MM
-    // Se o valor já vier pronto num formato completo reconhecido
-    // (colado de outro sistema, com segundos), a máscara não mexe
-    // nele - só formata quando a pessoa está digitando dígito a dígito.
+    // MÁSCARA DE DATA/HORA
     // ==========================================
-    const REGEX_ISO_COMPLETO = /^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/;
-    const REGEX_BR_COMPLETO = /^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}:\d{2}$/;
+    // CORREÇÃO: Regex permitindo segundos opcionais para lidar com diferentes copys
+    const REGEX_ISO_COMPLETO = /^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}(:\d{2})?$/;
+    const REGEX_BR_COMPLETO = /^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}(:\d{2})?$/;
 
     const pareceDataCompletaColada = (valor) => {
         const v = valor.trim();
@@ -269,15 +264,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     lrHorario.addEventListener('input', (e) => {
-        e.target.value = formatarDataHora(e.target.value);
+        if (!pareceDataCompletaColada(e.target.value)) {
+            e.target.value = formatarDataHora(e.target.value);
+        }
         salvarRascunhoLeroy();
     });
 
-    // ==========================================
-    // VÍNCULO AUTOMÁTICO: Descrição -> Fila (Leroy Acionamento)
-    // Se a descrição digitada/selecionada bater com a base, preenche a Fila.
-    // Se não bater (descrição nova), a Fila continua livre para digitar.
-    // ==========================================
+    // Vínculo Automático Leroy
     lrDescricao.addEventListener('input', () => {
         const chave = normalizar(lrDescricao.value);
         const filaEncontrada = DESCRICAO_FILA[chave];
@@ -287,12 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
         salvarRascunhoLeroy();
     });
 
-    // ==========================================
-    // ACIONAMENTO PRÉ-DEFINIDO (Leroy Acionamento)
-    // Ao escolher um acionamento, o texto entra pronto com o horário
-    // atual já preenchido e selecionado - o usuário só digita por cima
-    // se o horário do acionamento não for agora.
-    // ==========================================
+    // Acionamento Pré-definido
     const horaAtual = () => {
         const agora = new Date();
         const hh = String(agora.getHours()).padStart(2, '0');
@@ -311,10 +299,8 @@ document.addEventListener('DOMContentLoaded', () => {
         lrAcionamento.value = textoFinal;
         salvarRascunhoLeroy();
 
-        // Reseta o select para permitir escolher o mesmo item de novo depois
         lrAcionamentoBase.value = '';
 
-        // Se o texto tem horário, deixa ele já selecionado pra digitar por cima
         if (temHorario) {
             const posicaoHora = textoFinal.indexOf(hora);
             lrAcionamento.focus();
@@ -323,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================
-    // LÓGICA DE ARRASTAR A JANELA (mouse + toque)
+    // LÓGICA DE ARRASTAR
     // ==========================================
     let isDragging = false;
     let offsetX = 0;
@@ -366,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     if (widgetHeader && widgetPhone) {
-        // Mouse (desktop)
+        // Mouse
         widgetHeader.addEventListener('mousedown', (e) => {
             if (e.target.closest('.btn-minimize')) return;
             iniciarArrasto(e.clientX, e.clientY);
@@ -374,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('mousemove', (e) => moverArrasto(e.clientX, e.clientY));
         document.addEventListener('mouseup', finalizarArrasto);
 
-        // Toque (tablet/notebook touchscreen)
+        // Touch
         widgetHeader.addEventListener('touchstart', (e) => {
             if (e.target.closest('.btn-minimize')) return;
             const toque = e.touches[0];
@@ -391,8 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // RASCUNHO - FORMULÁRIO GERAL
-    // (mantém a mesma chave de antes, pra não perder rascunho já salvo)
+    // RASCUNHOS
     // ==========================================
     const carregarRascunhoGeral = () => {
         const rascunho = JSON.parse(localStorage.getItem('rascunhoChamadoPM'));
@@ -432,10 +417,6 @@ document.addEventListener('DOMContentLoaded', () => {
         input.addEventListener('change', salvarRascunhoGeral);
     });
 
-    // ==========================================
-    // RASCUNHO - FORMULÁRIO LEROY ACIONAMENTO
-    // (chave própria, não interfere no rascunho geral)
-    // ==========================================
     const carregarRascunhoLeroy = () => {
         const rascunho = JSON.parse(localStorage.getItem('rascunhoChamadoLeroyPM'));
         if (rascunho) {
@@ -471,7 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarRascunhoLeroy();
 
     // ==========================================
-    // TOAST
+    // TOAST & VALIDAÇÃO
     // ==========================================
     const mostrarToast = (mensagem, tipo = 'sucesso') => {
         const icone = tipo === 'erro' ? 'mdi-alert-circle' : 'mdi-check-circle';
@@ -483,14 +464,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3000);
     };
 
-    // ==========================================
-    // VALIDAÇÃO ANTES DE COPIAR
-    // Evita mandar pro Teams um registro sem Ticket preenchido -
-    // destaca o campo e cancela a cópia em vez de deixar passar em branco.
-    // ==========================================
     const sinalizarCampoVazio = (campo) => {
         campo.classList.remove('field-error');
-        // Força reflow pra permitir repetir a animação em cliques seguidos
         void campo.offsetWidth;
         campo.classList.add('field-error');
         campo.focus();
@@ -508,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ==========================================
-    // COPIAR P/ TEAMS (texto muda conforme a aba ativa)
+    // COPIAR TEXTO
     // ==========================================
     const gerarTextoGeral = () => {
         return `Data: ${campoData.value || 'N/A'}
@@ -531,25 +506,29 @@ Acionamento: ${lrAcionamento.value.trim() || 'N/A'}
 Analista: ${lrAnalista.value}`;
     };
 
-    const copiarTexto = async (texto) => {
+    const copiarTexto = async (texto, rotuloTipo) => {
+        const mensagem = rotuloTipo ? `Copiado: ${rotuloTipo}` : 'Copiado com sucesso!';
         try {
             await navigator.clipboard.writeText(texto);
-            mostrarToast('Copiado e pronto pro Teams!');
+            mostrarToast(mensagem);
         } catch (err) {
+            // CORREÇÃO: Style adicionado para prevenir o pulo da tela
             const textArea = document.createElement('textarea');
             textArea.value = texto;
+            textArea.style.position = 'fixed';
+            textArea.style.top = '0';
+            textArea.style.left = '0';
+            textArea.style.opacity = '0';
             document.body.appendChild(textArea);
             textArea.select();
             document.execCommand('Copy');
             textArea.remove();
-            mostrarToast('Copiado e pronto pro Teams!');
+            mostrarToast(mensagem);
         }
     };
 
     // ==========================================
-    // HISTÓRICO - tudo que já foi copiado
-    // Guarda tanto o texto final quanto os campos originais,
-    // pra permitir recopiar ou restaurar o formulário depois.
+    // HISTÓRICO
     // ==========================================
     const HISTORICO_CHAVE = 'historicoChamadosPM';
     const HISTORICO_LIMITE = 50;
@@ -575,7 +554,6 @@ Analista: ${lrAnalista.value}`;
         localStorage.setItem(HISTORICO_CHAVE, JSON.stringify(lista));
     };
 
-    // Monta o snapshot com base na aba ativa no momento da cópia
     const montarRegistroHistorico = (texto) => {
         if (modoAtivo === 'geral') {
             return {
@@ -619,7 +597,7 @@ Analista: ${lrAnalista.value}`;
     const adicionarAoHistorico = (texto) => {
         const registro = montarRegistroHistorico(texto);
         const lista = obterHistorico();
-        lista.unshift(registro); // mais recente primeiro
+        lista.unshift(registro); 
         if (lista.length > HISTORICO_LIMITE) lista.length = HISTORICO_LIMITE;
         salvarHistoricoCompleto(lista);
     };
@@ -664,10 +642,9 @@ Analista: ${lrAnalista.value}`;
     const recopiarDoHistorico = (id) => {
         const item = obterHistorico().find(i => i.id === id);
         if (!item) return;
-        copiarTexto(item.texto);
+        copiarTexto(item.texto, ROTULOS_TIPO[item.tipo]);
     };
 
-    // Filtra o histórico pelo termo digitado (ticket ou resumo/descrição)
     const filtrarHistorico = (lista, termo) => {
         const chave = normalizar(termo || '');
         if (!chave) return lista;
@@ -731,10 +708,7 @@ Analista: ${lrAnalista.value}`;
     campoBuscaHistorico.addEventListener('input', renderizarHistorico);
 
     // ==========================================
-    // LIMPAR HISTÓRICO - com confirmação de 2 cliques
-    // Primeiro clique só avisa; o botão muda de cor/texto por 3s.
-    // Um segundo clique dentro desse tempo confirma a exclusão.
-    // Evita apagar 50 registros por engano com um único clique.
+    // LIMPAR HISTÓRICO
     // ==========================================
     let aguardandoConfirmacaoLimpeza = false;
     let timeoutConfirmacaoLimpeza = null;
@@ -764,20 +738,19 @@ Analista: ${lrAnalista.value}`;
     });
 
     // ==========================================
-    // Botão Copiar: valida, gera o texto, salva no histórico e copia
+    // AÇÕES PRINCIPAIS (Copiar e Limpar)
     // ==========================================
     const executarCopia = () => {
-        if (modoAtivo === 'historico') return; // nada a copiar direto dessa aba
+        if (modoAtivo === 'historico') return; 
         if (!validarAntesDeCopiar()) return;
 
         const texto = modoAtivo === 'geral' ? gerarTextoGeral() : gerarTextoLeroy();
         adicionarAoHistorico(texto);
-        copiarTexto(texto);
+        copiarTexto(texto, ROTULOS_TIPO[modoAtivo]);
     };
 
     btnCopiar.addEventListener('click', executarCopia);
 
-    // Atalho Ctrl+Enter (ou Cmd+Enter no Mac) para copiar sem tirar a mão do teclado
     document.addEventListener('keydown', (e) => {
         const teclaCopiar = (e.ctrlKey || e.metaKey) && e.key === 'Enter';
         if (teclaCopiar && !btnCopiar.disabled) {
@@ -786,9 +759,6 @@ Analista: ${lrAnalista.value}`;
         }
     });
 
-    // ==========================================
-    // LIMPAR CAMPOS (respeita a aba ativa, mantém Analista)
-    // ==========================================
     btnLimpar.addEventListener('click', () => {
         if (modoAtivo === 'geral') {
             campoData.value = '';
@@ -809,6 +779,5 @@ Analista: ${lrAnalista.value}`;
         }
     });
 
-    // Primeira renderização (caso o usuário já abra direto na aba histórico)
     renderizarHistorico();
 });

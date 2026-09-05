@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Assistente de Chamados</title>
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=4">
-    <script src="script.js?v=5" defer></script>
+    <link rel="stylesheet" href="style.css?v=5">
+    <script src="script.js?v=6" defer></script>
 </head>
 <body>
 
@@ -31,7 +31,7 @@
                 <i class="mdi mdi-earth"></i> Geral
             </button>
             <button class="tab-btn" data-tab="leroy" id="tabLeroy">
-                <i class="mdi mdi-hammer-wrench"></i> Leroy
+                <i class="mdi mdi-bell-alert-outline"></i> Acion. Leroy
             </button>
             <button class="tab-btn" data-tab="historico" id="tabHistorico">
                 <i class="mdi mdi-history"></i> Histórico
@@ -182,11 +182,12 @@
                     </div>
                 </div>
 
+                <!-- Corrigido maxlength para 19 -->
                 <div class="form-group">
                     <label for="lrHorario">Horário</label>
                     <div class="input-wrapper">
                         <i class="mdi mdi-clock-outline"></i>
-                        <input type="text" id="lrHorario" class="form-control" placeholder="DD/MM/AAAA HH:MM" autocomplete="off" maxlength="16">
+                        <input type="text" id="lrHorario" class="form-control" placeholder="DD/MM/AAAA HH:MM" autocomplete="off" maxlength="19">
                     </div>
                 </div>
 

@@ -1,15 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Referências gerais do widget
     const widgetPhone = document.getElementById('widgetPhone');
     const widgetHeader = document.querySelector('.widget-header');
     const toastMessage = document.getElementById('toastMessage');
     const btnCopiar = document.getElementById('btnCopiar');
+    const txtBtnCopiar = document.getElementById('txtBtnCopiar');
+    const iconBtnCopiar = document.getElementById('iconBtnCopiar');
+    const btnCopiarGeralLeroy = document.getElementById('btnCopiarGeralLeroy');
     const btnLimpar = document.getElementById('btnLimpar');
     const btnMinimizar = document.getElementById('btnMinimizar');
     const iconMinimizar = document.getElementById('iconMinimizar');
 
-    // Referências - Formulário Geral
     const campoData = document.getElementById('campoData');
     const campoTicket = document.getElementById('campoTicket');
     const campoContato = document.getElementById('campoContato');
@@ -19,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const campoStatus = document.getElementById('campoStatus');
     const campoQueda = document.getElementById('campoQueda');
 
-    // Referências - Formulário Leroy Acionamento
     const CONTATO_LEROY = 'Backlog';
     const lrTicket = document.getElementById('lrTicket');
     const lrDescricao = document.getElementById('lrDescricao');
@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const lrAcionamentoBase = document.getElementById('lrAcionamentoBase');
     const lrAnalista = document.getElementById('lrAnalista');
 
-    // Referências - Histórico
     const listaHistorico = document.getElementById('listaHistorico');
     const histVazio = document.getElementById('histVazio');
     const histSemResultado = document.getElementById('histSemResultado');
@@ -37,26 +36,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const txtLimparHistorico = document.getElementById('txtLimparHistorico');
     const campoBuscaHistorico = document.getElementById('campoBuscaHistorico');
 
-    // Referências - Abas
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
 
-    // Mapa aba -> id do conteúdo (facilita adicionar novas abas no futuro)
     const MAPA_ABAS = {
         geral: 'formGeral',
         leroy: 'formLeroy',
         historico: 'formHistorico'
     };
 
-    // Rótulo exato de cada tipo de registro
     const ROTULOS_TIPO = {
-        geral: 'Passagem de Turno',
-        leroy: 'Acionamento Leroy'
+        geral: 'Produtividade Geral',
+        leroy: 'Acionamento Leroy',
+        leroyGeral: 'Produtividade Geral (Leroy)'
     };
 
-    // ==========================================
-    // BASE DE CONHECIMENTO: Descrição -> Fila (Leroy Acionamento)
-    // ==========================================
     const BASE_DESCRICOES_LEROY = [
         { descricao: 'Lentidão p/ liberar remessa', fila: 'N2 SAP TM/LES' },
         { descricao: 'Erro manifesto', fila: 'N2 SAP TM/LES' },
@@ -93,45 +87,31 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     const normalizar = (texto) => texto.trim().toLowerCase();
-
-    // Escapa HTML contra XSS
     const escaparHtml = (texto) => {
         const div = document.createElement('div');
         div.textContent = texto;
         return div.innerHTML;
     };
 
-    // Índice de busca
     const DESCRICAO_FILA = {};
-    BASE_DESCRICOES_LEROY.forEach(item => {
-        DESCRICAO_FILA[normalizar(item.descricao)] = item.fila;
-    });
+    BASE_DESCRICOES_LEROY.forEach(item => DESCRICAO_FILA[normalizar(item.descricao)] = item.fila);
 
     let modoAtivo = 'geral';
 
-    // Evitar Submit Acidental
-    document.querySelectorAll('form').forEach(form => {
-        form.addEventListener('submit', (e) => e.preventDefault());
-    });
+    document.querySelectorAll('form').forEach(form => form.addEventListener('submit', (e) => e.preventDefault()));
 
-    // ==========================================
-    // POSIÇÃO E ESTADO MINIMIZADO
-    // ==========================================
+    // POSIÇÃO E ESTADO DO WIDGET
     const POSICAO_CHAVE = 'posicaoWidgetPM';
     const MINIMIZADO_CHAVE = 'minimizadoWidgetPM';
 
-    const salvarPosicao = (left, top) => {
-        localStorage.setItem(POSICAO_CHAVE, JSON.stringify({ left, top }));
-    };
+    const salvarPosicao = (left, top) => localStorage.setItem(POSICAO_CHAVE, JSON.stringify({ left, top }));
 
     const centralizarWidget = () => {
         if (!widgetPhone) return;
         const width = widgetPhone.offsetWidth || 360;
         const height = widgetPhone.offsetHeight || 750;
-
         const initialLeft = Math.max(0, (window.innerWidth - width) / 2);
         const initialTop = Math.max(0, (window.innerHeight - height) / 2);
-
         widgetPhone.style.left = `${initialLeft}px`;
         widgetPhone.style.top = `${initialTop}px`;
     };
@@ -147,17 +127,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 widgetPhone.dataset.moved = 'true';
                 return true;
             }
-        } catch {
-            // Ignora se corrompido
-        }
+        } catch { }
         return false;
     };
 
-    if (!restaurarPosicao()) {
-        centralizarWidget();
-    }
+    if (!restaurarPosicao()) centralizarWidget();
 
-    // CORREÇÃO: Mantém widget dentro da tela ao redimensionar
     window.addEventListener('resize', () => {
         if (!widgetPhone.dataset.moved) {
             centralizarWidget();
@@ -166,7 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const maxTop = Math.max(0, window.innerHeight - widgetPhone.offsetHeight);
             const currentLeft = parseInt(widgetPhone.style.left, 10) || 0;
             const currentTop = parseInt(widgetPhone.style.top, 10) || 0;
-            
             widgetPhone.style.left = `${Math.min(currentLeft, maxLeft)}px`;
             widgetPhone.style.top = `${Math.min(currentTop, maxTop)}px`;
         }
@@ -183,10 +157,8 @@ document.addEventListener('DOMContentLoaded', () => {
         e.stopPropagation();
         aplicarMinimizado(!widgetPhone.classList.contains('minimized'));
     });
-
     aplicarMinimizado(localStorage.getItem(MINIMIZADO_CHAVE) === '1');
 
-    // Popular Datalist Leroy
     const listaDescricoesLeroy = document.getElementById('listaDescricoesLeroy');
     if (listaDescricoesLeroy) {
         BASE_DESCRICOES_LEROY.forEach(item => {
@@ -196,26 +168,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ==========================================
-    // TROCA DE ABA
-    // ==========================================
+    // CONTROLE DE ABAS
     const trocarAba = (tab) => {
         modoAtivo = tab;
-
-        tabButtons.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.tab === tab);
-        });
-
-        tabContents.forEach(content => {
-            const isTarget = content.id === MAPA_ABAS[tab];
-            content.classList.toggle('active', isTarget);
-        });
-
+        
+        tabButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+        tabContents.forEach(content => content.classList.toggle('active', content.id === MAPA_ABAS[tab]));
+        
         widgetPhone.classList.toggle('modo-leroy', tab === 'leroy');
 
-        if (tab === 'historico') {
-            renderizarHistorico();
+        // Exibir ou ocultar o botão "P/ Geral" corretamente
+        if (tab === 'leroy') {
+            btnCopiarGeralLeroy.style.display = 'flex';
+            txtBtnCopiar.textContent = 'Copiar Leroy';
+        } else {
+            btnCopiarGeralLeroy.style.display = 'none';
+            txtBtnCopiar.textContent = 'Copiar';
         }
+
+        if (tab === 'historico') renderizarHistorico();
 
         const semAcaoNoHistorico = tab === 'historico';
         btnCopiar.disabled = semAcaoNoHistorico;
@@ -224,169 +195,119 @@ document.addEventListener('DOMContentLoaded', () => {
         btnLimpar.classList.toggle('btn-disabled', semAcaoNoHistorico);
     };
 
-    tabButtons.forEach(btn => {
-        btn.addEventListener('click', () => trocarAba(btn.dataset.tab));
-    });
+    // Inicializa a UI na aba correta no milissegundo zero
+    trocarAba('geral');
 
-    // ==========================================
-    // MÁSCARA DE DATA/HORA
-    // ==========================================
-    // CORREÇÃO: Regex permitindo segundos opcionais para lidar com diferentes copys
-    const REGEX_ISO_COMPLETO = /^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}(:\d{2})?$/;
-    const REGEX_BR_COMPLETO = /^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}(:\d{2})?$/;
+    tabButtons.forEach(btn => btn.addEventListener('click', () => trocarAba(btn.dataset.tab)));
 
-    const pareceDataCompletaColada = (valor) => {
-        const v = valor.trim();
-        return REGEX_ISO_COMPLETO.test(v) || REGEX_BR_COMPLETO.test(v);
+    // PREENCHIMENTO DE DATA/HORA
+    const preencherAgora = (inputElement) => {
+        const d = new Date();
+        const dia = String(d.getDate()).padStart(2, '0');
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        const ano = d.getFullYear();
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        inputElement.value = `${dia}/${mes}/${ano} ${hh}:${mm}`;
+        inputElement.dispatchEvent(new Event('input')); // Força o salvamento no rascunho
     };
+
+    document.getElementById('btnAgoraGeral').addEventListener('click', () => preencherAgora(campoData));
+    document.getElementById('btnAgoraLeroy').addEventListener('click', () => preencherAgora(lrHorario));
+
+    const REGEX_ISO = /^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}(:\d{2})?$/;
+    const REGEX_BR = /^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}(:\d{2})?$/;
+    const pareceDataCompleta = (v) => REGEX_ISO.test(v.trim()) || REGEX_BR.test(v.trim());
 
     const formatarDataHora = (valor) => {
         if (!valor) return '';
-
         let v = valor.replace(/\D/g, '');
         if (v.length > 12) v = v.substring(0, 12);
-
-        let formatted = '';
-        if (v.length > 0) formatted += v.substring(0, 2);
-        if (v.length > 2) formatted += '/' + v.substring(2, 4);
-        if (v.length > 4) formatted += '/' + v.substring(4, 8);
-        if (v.length > 8) formatted += ' ' + v.substring(8, 10);
-        if (v.length > 10) formatted += ':' + v.substring(10, 12);
-
-        return formatted;
+        let f = '';
+        if (v.length > 0) f += v.substring(0, 2);
+        if (v.length > 2) f += '/' + v.substring(2, 4);
+        if (v.length > 4) f += '/' + v.substring(4, 8);
+        if (v.length > 8) f += ' ' + v.substring(8, 10);
+        if (v.length > 10) f += ':' + v.substring(10, 12);
+        return f;
     };
 
     campoData.addEventListener('input', (e) => {
-        if (!pareceDataCompletaColada(e.target.value)) {
-            e.target.value = formatarDataHora(e.target.value);
-        }
+        if (!pareceDataCompleta(e.target.value)) e.target.value = formatarDataHora(e.target.value);
         salvarRascunhoGeral();
     });
 
     lrHorario.addEventListener('input', (e) => {
-        if (!pareceDataCompletaColada(e.target.value)) {
-            e.target.value = formatarDataHora(e.target.value);
-        }
+        if (!pareceDataCompleta(e.target.value)) e.target.value = formatarDataHora(e.target.value);
         salvarRascunhoLeroy();
     });
 
-    // Vínculo Automático Leroy
     lrDescricao.addEventListener('input', () => {
-        const chave = normalizar(lrDescricao.value);
-        const filaEncontrada = DESCRICAO_FILA[chave];
-        if (filaEncontrada) {
-            lrFila.value = filaEncontrada;
-        }
+        const filaEncontrada = DESCRICAO_FILA[normalizar(lrDescricao.value)];
+        if (filaEncontrada) lrFila.value = filaEncontrada;
         salvarRascunhoLeroy();
     });
-
-    // Acionamento Pré-definido
-    const horaAtual = () => {
-        const agora = new Date();
-        const hh = String(agora.getHours()).padStart(2, '0');
-        const mm = String(agora.getMinutes()).padStart(2, '0');
-        return `${hh}:${mm}`;
-    };
 
     lrAcionamentoBase.addEventListener('change', () => {
         const template = lrAcionamentoBase.value;
         if (!template) return;
-
-        const temHorario = template.includes('{HORA}');
-        const hora = horaAtual();
-        const textoFinal = temHorario ? template.replace('{HORA}', hora) : template;
-
+        const d = new Date();
+        const hora = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        const textoFinal = template.includes('{HORA}') ? template.replace('{HORA}', hora) : template;
+        
         lrAcionamento.value = textoFinal;
         salvarRascunhoLeroy();
+        lrAcionamentoBase.value = ''; // Reseta o seletor
 
-        lrAcionamentoBase.value = '';
-
-        if (temHorario) {
-            const posicaoHora = textoFinal.indexOf(hora);
+        if (template.includes('{HORA}')) {
+            const pos = textoFinal.indexOf(hora);
             lrAcionamento.focus();
-            lrAcionamento.setSelectionRange(posicaoHora, posicaoHora + hora.length);
+            lrAcionamento.setSelectionRange(pos, pos + hora.length);
         }
     });
 
-    // ==========================================
-    // LÓGICA DE ARRASTAR
-    // ==========================================
-    let isDragging = false;
-    let offsetX = 0;
-    let offsetY = 0;
-
+    // ARRASTO DO WIDGET
+    let isDragging = false, offsetX = 0, offsetY = 0;
     const iniciarArrasto = (clientX, clientY) => {
         isDragging = true;
         widgetPhone.dataset.moved = 'true';
-
         const rect = widgetPhone.getBoundingClientRect();
         offsetX = clientX - rect.left;
         offsetY = clientY - rect.top;
-
         document.body.style.userSelect = 'none';
     };
-
+    
     const moverArrasto = (clientX, clientY) => {
         if (!isDragging) return;
-
-        let newLeft = clientX - offsetX;
-        let newTop = clientY - offsetY;
-
-        const maxLeft = window.innerWidth - widgetPhone.offsetWidth;
-        const maxTop = window.innerHeight - widgetPhone.offsetHeight;
-
-        newLeft = Math.max(0, Math.min(newLeft, maxLeft));
-        newTop = Math.max(0, Math.min(newTop, maxTop));
-
+        let newLeft = Math.max(0, Math.min(clientX - offsetX, window.innerWidth - widgetPhone.offsetWidth));
+        let newTop = Math.max(0, Math.min(clientY - offsetY, window.innerHeight - widgetPhone.offsetHeight));
         widgetPhone.style.left = `${newLeft}px`;
         widgetPhone.style.top = `${newTop}px`;
     };
-
+    
     const finalizarArrasto = () => {
         if (!isDragging) return;
         isDragging = false;
         document.body.style.userSelect = '';
-
-        const rect = widgetPhone.getBoundingClientRect();
-        salvarPosicao(rect.left, rect.top);
+        salvarPosicao(widgetPhone.getBoundingClientRect().left, widgetPhone.getBoundingClientRect().top);
     };
 
     if (widgetHeader && widgetPhone) {
-        // Mouse
-        widgetHeader.addEventListener('mousedown', (e) => {
-            if (e.target.closest('.btn-minimize')) return;
-            iniciarArrasto(e.clientX, e.clientY);
-        });
+        widgetHeader.addEventListener('mousedown', (e) => { if (!e.target.closest('.btn-minimize')) iniciarArrasto(e.clientX, e.clientY); });
         document.addEventListener('mousemove', (e) => moverArrasto(e.clientX, e.clientY));
         document.addEventListener('mouseup', finalizarArrasto);
-
-        // Touch
-        widgetHeader.addEventListener('touchstart', (e) => {
-            if (e.target.closest('.btn-minimize')) return;
-            const toque = e.touches[0];
-            iniciarArrasto(toque.clientX, toque.clientY);
-        }, { passive: true });
-
-        document.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            const toque = e.touches[0];
-            moverArrasto(toque.clientX, toque.clientY);
-        }, { passive: true });
-
+        
+        // Suporte Mobile
+        widgetHeader.addEventListener('touchstart', (e) => { if (!e.target.closest('.btn-minimize')) iniciarArrasto(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+        document.addEventListener('touchmove', (e) => { if (isDragging) moverArrasto(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
         document.addEventListener('touchend', finalizarArrasto);
     }
 
-    // ==========================================
     // RASCUNHOS
-    // ==========================================
     const carregarRascunhoGeral = () => {
         const rascunho = JSON.parse(localStorage.getItem('rascunhoChamadoPM'));
         if (rascunho) {
-            if (rascunho.data) {
-                campoData.value = pareceDataCompletaColada(rascunho.data)
-                    ? rascunho.data
-                    : formatarDataHora(rascunho.data);
-            }
+            campoData.value = pareceDataCompleta(rascunho.data || '') ? rascunho.data : formatarDataHora(rascunho.data);
             campoTicket.value = rascunho.ticket || '';
             if (rascunho.contato) campoContato.value = rascunho.contato;
             if (rascunho.operacao) campoOperacao.value = rascunho.operacao;
@@ -396,25 +317,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (rascunho.queda) campoQueda.value = rascunho.queda;
         }
     };
-
     const salvarRascunhoGeral = () => {
-        const dados = {
-            data: campoData.value,
-            ticket: campoTicket.value,
-            contato: campoContato.value,
-            operacao: campoOperacao.value,
-            analista: campoAnalista.value,
-            descricao: campoDescricao.value,
-            status: campoStatus.value,
-            queda: campoQueda.value
-        };
-        localStorage.setItem('rascunhoChamadoPM', JSON.stringify(dados));
+        localStorage.setItem('rascunhoChamadoPM', JSON.stringify({
+            data: campoData.value, ticket: campoTicket.value, contato: campoContato.value,
+            operacao: campoOperacao.value, analista: campoAnalista.value, descricao: campoDescricao.value,
+            status: campoStatus.value, queda: campoQueda.value
+        }));
     };
-
-    const inputsGeral = [campoTicket, campoContato, campoOperacao, campoAnalista, campoDescricao, campoStatus, campoQueda];
-    inputsGeral.forEach(input => {
-        input.addEventListener('input', salvarRascunhoGeral);
-        input.addEventListener('change', salvarRascunhoGeral);
+    [campoTicket, campoContato, campoOperacao, campoAnalista, campoDescricao, campoStatus, campoQueda].forEach(i => {
+        i.addEventListener('input', salvarRascunhoGeral);
+        i.addEventListener('change', salvarRascunhoGeral);
     });
 
     const carregarRascunhoLeroy = () => {
@@ -423,50 +335,43 @@ document.addEventListener('DOMContentLoaded', () => {
             lrTicket.value = rascunho.ticket || '';
             lrDescricao.value = rascunho.descricao || '';
             lrFila.value = rascunho.fila || '';
-            if (rascunho.horario) lrHorario.value = formatarDataHora(rascunho.horario);
+            lrHorario.value = pareceDataCompleta(rascunho.horario || '') ? rascunho.horario : formatarDataHora(rascunho.horario);
             lrAcionamento.value = rascunho.acionamento || '';
             if (rascunho.analista) lrAnalista.value = rascunho.analista;
         }
     };
-
     const salvarRascunhoLeroy = () => {
-        const dados = {
-            ticket: lrTicket.value,
-            contato: CONTATO_LEROY,
-            descricao: lrDescricao.value,
-            fila: lrFila.value,
-            horario: lrHorario.value,
-            acionamento: lrAcionamento.value,
-            analista: lrAnalista.value
-        };
-        localStorage.setItem('rascunhoChamadoLeroyPM', JSON.stringify(dados));
+        localStorage.setItem('rascunhoChamadoLeroyPM', JSON.stringify({
+            ticket: lrTicket.value, contato: CONTATO_LEROY, descricao: lrDescricao.value,
+            fila: lrFila.value, horario: lrHorario.value, acionamento: lrAcionamento.value, analista: lrAnalista.value
+        }));
     };
-
-    const inputsLeroy = [lrTicket, lrFila, lrAcionamento, lrAnalista];
-    inputsLeroy.forEach(input => {
-        input.addEventListener('input', salvarRascunhoLeroy);
-        input.addEventListener('change', salvarRascunhoLeroy);
+    [lrTicket, lrFila, lrAcionamento, lrAnalista].forEach(i => {
+        i.addEventListener('input', salvarRascunhoLeroy);
+        i.addEventListener('change', salvarRascunhoLeroy);
     });
 
     carregarRascunhoGeral();
     carregarRascunhoLeroy();
 
-    // ==========================================
-    // TOAST & VALIDAÇÃO
-    // ==========================================
+    // TOAST E VALIDAÇÃO
     const mostrarToast = (mensagem, tipo = 'sucesso') => {
         const icone = tipo === 'erro' ? 'mdi-alert-circle' : 'mdi-check-circle';
         toastMessage.innerHTML = `<i class="mdi ${icone}"></i> ${mensagem}`;
         toastMessage.classList.toggle('toast-error', tipo === 'erro');
         toastMessage.classList.add('show');
-        setTimeout(() => {
-            toastMessage.classList.remove('show');
-        }, 3000);
+        setTimeout(() => toastMessage.classList.remove('show'), 3000);
+    };
+
+    const animarBotaoCopia = () => {
+        if (!iconBtnCopiar) return;
+        iconBtnCopiar.className = 'mdi mdi-check';
+        setTimeout(() => { iconBtnCopiar.className = 'mdi mdi-content-copy'; }, 2000);
     };
 
     const sinalizarCampoVazio = (campo) => {
         campo.classList.remove('field-error');
-        void campo.offsetWidth;
+        void campo.offsetWidth; // Força o reflow
         campo.classList.add('field-error');
         campo.focus();
         setTimeout(() => campo.classList.remove('field-error'), 900);
@@ -482,37 +387,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return true;
     };
 
-    // ==========================================
-    // COPIAR TEXTO
-    // ==========================================
-    const gerarTextoGeral = () => {
-        return `Data: ${campoData.value || 'N/A'}
-Ticket: ${campoTicket.value.trim() || 'N/A'}
-Contato: ${campoContato.value}
-Operação: ${campoOperacao.value}
-Analista: ${campoAnalista.value}
-Descrição: ${campoDescricao.value.trim() || 'Sem descrição.'}
-Status: ${campoStatus.value}
-Queda: ${campoQueda.value}`;
-    };
-
-    const gerarTextoLeroy = () => {
-        return `Ticket: ${lrTicket.value.trim() || 'N/A'}
-Contato: ${CONTATO_LEROY}
-Descrição: ${lrDescricao.value.trim() || 'Sem descrição.'}
-Fila: ${lrFila.value.trim() || 'N/A'}
-Horario: ${lrHorario.value || 'N/A'}
-Acionamento: ${lrAcionamento.value.trim() || 'N/A'}
-Analista: ${lrAnalista.value}`;
-    };
+    // FUNÇÕES DE CÓPIA DE TEXTO
+    const gerarTextoGeral = () => `Data: ${campoData.value || 'N/A'}\nTicket: ${campoTicket.value.trim() || 'N/A'}\nContato: ${campoContato.value}\nOperação: ${campoOperacao.value}\nAnalista: ${campoAnalista.value}\nDescrição: ${campoDescricao.value.trim() || 'Sem descrição.'}\nStatus: ${campoStatus.value}\nQueda: ${campoQueda.value}`;
+    const gerarTextoLeroy = () => `Ticket: ${lrTicket.value.trim() || 'N/A'}\nContato: ${CONTATO_LEROY}\nDescrição: ${lrDescricao.value.trim() || 'Sem descrição.'}\nFila: ${lrFila.value.trim() || 'N/A'}\nHorario: ${lrHorario.value || 'N/A'}\nAcionamento: ${lrAcionamento.value.trim() || 'N/A'}\nAnalista: ${lrAnalista.value}`;
+    const gerarTextoLeroyParaGeral = () => `Data: ${lrHorario.value || 'N/A'}\nTicket: ${lrTicket.value.trim() || 'N/A'}\nContato: Backlog\nOperação: Leroy\nAnalista: ${lrAnalista.value}\nDescrição: Acionamento\nStatus: Encaminhado\nQueda: N/A`;
 
     const copiarTexto = async (texto, rotuloTipo) => {
         const mensagem = rotuloTipo ? `Copiado: ${rotuloTipo}` : 'Copiado com sucesso!';
         try {
             await navigator.clipboard.writeText(texto);
             mostrarToast(mensagem);
+            animarBotaoCopia();
         } catch (err) {
-            // CORREÇÃO: Style adicionado para prevenir o pulo da tela
             const textArea = document.createElement('textarea');
             textArea.value = texto;
             textArea.style.position = 'fixed';
@@ -524,98 +410,59 @@ Analista: ${lrAnalista.value}`;
             document.execCommand('Copy');
             textArea.remove();
             mostrarToast(mensagem);
+            animarBotaoCopia();
         }
     };
 
-    // ==========================================
     // HISTÓRICO
-    // ==========================================
     const HISTORICO_CHAVE = 'historicoChamadosPM';
     const HISTORICO_LIMITE = 50;
 
-    const formatarDataExibicao = (timestamp) => {
-        const d = new Date(timestamp);
-        const dia = String(d.getDate()).padStart(2, '0');
-        const mes = String(d.getMonth() + 1).padStart(2, '0');
-        const hh = String(d.getHours()).padStart(2, '0');
-        const mm = String(d.getMinutes()).padStart(2, '0');
-        return `${dia}/${mes} ${hh}:${mm}`;
-    };
-
     const obterHistorico = () => {
-        try {
-            return JSON.parse(localStorage.getItem(HISTORICO_CHAVE)) || [];
-        } catch {
-            return [];
-        }
+        try { return JSON.parse(localStorage.getItem(HISTORICO_CHAVE)) || []; } catch { return []; }
     };
+    const salvarHistoricoCompleto = (lista) => localStorage.setItem(HISTORICO_CHAVE, JSON.stringify(lista));
 
-    const salvarHistoricoCompleto = (lista) => {
-        localStorage.setItem(HISTORICO_CHAVE, JSON.stringify(lista));
-    };
-
-    const montarRegistroHistorico = (texto) => {
-        if (modoAtivo === 'geral') {
+    const montarRegistroHistorico = (texto, tipoOverride = null) => {
+        const tipoFinal = tipoOverride || modoAtivo;
+        if (tipoFinal === 'geral') {
             return {
-                id: Date.now(),
-                tipo: 'geral',
-                timestamp: Date.now(),
-                ticket: campoTicket.value.trim() || 'N/A',
-                resumo: `${campoOperacao.value} · ${campoStatus.value}`,
-                texto,
-                campos: {
-                    data: campoData.value,
-                    ticket: campoTicket.value,
-                    contato: campoContato.value,
-                    operacao: campoOperacao.value,
-                    analista: campoAnalista.value,
-                    descricao: campoDescricao.value,
-                    status: campoStatus.value,
-                    queda: campoQueda.value
-                }
+                id: Date.now(), tipo: 'geral', timestamp: Date.now(),
+                ticket: campoTicket.value.trim() || 'N/A', resumo: `${campoOperacao.value} · ${campoStatus.value}`, texto,
+                campos: { data: campoData.value, ticket: campoTicket.value, contato: campoContato.value, operacao: campoOperacao.value, analista: campoAnalista.value, descricao: campoDescricao.value, status: campoStatus.value, queda: campoQueda.value }
+            };
+        } else if (tipoFinal === 'leroyGeral') {
+            return {
+                id: Date.now(), tipo: 'geral', timestamp: Date.now(),
+                ticket: lrTicket.value.trim() || 'N/A', resumo: `Leroy · Encaminhado (Auto)`, texto,
+                campos: { data: lrHorario.value, ticket: lrTicket.value, contato: 'Backlog', operacao: 'Leroy', analista: lrAnalista.value, descricao: 'Acionamento', status: 'Encaminhado', queda: 'N/A' }
             };
         }
         return {
-            id: Date.now(),
-            tipo: 'leroy',
-            timestamp: Date.now(),
-            ticket: lrTicket.value.trim() || 'N/A',
-            resumo: `${lrDescricao.value.trim() || 'Sem descrição'} · ${lrFila.value.trim() || 'N/A'}`,
-            texto,
-            campos: {
-                ticket: lrTicket.value,
-                contato: CONTATO_LEROY,
-                descricao: lrDescricao.value,
-                fila: lrFila.value,
-                horario: lrHorario.value,
-                acionamento: lrAcionamento.value,
-                analista: lrAnalista.value
-            }
+            id: Date.now(), tipo: 'leroy', timestamp: Date.now(),
+            ticket: lrTicket.value.trim() || 'N/A', resumo: `${lrDescricao.value.trim() || 'Sem descrição'} · ${lrFila.value.trim() || 'N/A'}`, texto,
+            campos: { ticket: lrTicket.value, contato: CONTATO_LEROY, descricao: lrDescricao.value, fila: lrFila.value, horario: lrHorario.value, acionamento: lrAcionamento.value, analista: lrAnalista.value }
         };
     };
 
-    const adicionarAoHistorico = (texto) => {
-        const registro = montarRegistroHistorico(texto);
+    const adicionarAoHistorico = (texto, tipoOverride = null) => {
         const lista = obterHistorico();
-        lista.unshift(registro); 
+        lista.unshift(montarRegistroHistorico(texto, tipoOverride));
         if (lista.length > HISTORICO_LIMITE) lista.length = HISTORICO_LIMITE;
         salvarHistoricoCompleto(lista);
     };
 
     const excluirDoHistorico = (id) => {
-        const lista = obterHistorico().filter(item => item.id !== id);
-        salvarHistoricoCompleto(lista);
+        salvarHistoricoCompleto(obterHistorico().filter(item => item.id !== id));
         renderizarHistorico();
     };
 
     const restaurarDoHistorico = (id) => {
         const item = obterHistorico().find(i => i.id === id);
         if (!item) return;
-
+        
         if (item.tipo === 'geral') {
-            campoData.value = pareceDataCompletaColada(item.campos.data || '')
-                ? item.campos.data
-                : formatarDataHora(item.campos.data || '');
+            campoData.value = pareceDataCompleta(item.campos.data || '') ? item.campos.data : formatarDataHora(item.campos.data || '');
             campoTicket.value = item.campos.ticket || '';
             campoContato.value = item.campos.contato || 'Telefone';
             campoOperacao.value = item.campos.operacao || campoOperacao.value;
@@ -635,149 +482,102 @@ Analista: ${lrAnalista.value}`;
             salvarRascunhoLeroy();
             trocarAba('leroy');
         }
-
         mostrarToast('Restaurado no formulário!');
-    };
-
-    const recopiarDoHistorico = (id) => {
-        const item = obterHistorico().find(i => i.id === id);
-        if (!item) return;
-        copiarTexto(item.texto, ROTULOS_TIPO[item.tipo]);
-    };
-
-    const filtrarHistorico = (lista, termo) => {
-        const chave = normalizar(termo || '');
-        if (!chave) return lista;
-        return lista.filter(item =>
-            normalizar(item.ticket).includes(chave) ||
-            normalizar(item.resumo).includes(chave)
-        );
     };
 
     const renderizarHistorico = () => {
         const listaCompleta = obterHistorico();
-        const termo = campoBuscaHistorico.value;
-        const lista = filtrarHistorico(listaCompleta, termo);
+        const termo = normalizar(campoBuscaHistorico.value);
+        const lista = termo ? listaCompleta.filter(i => normalizar(i.ticket).includes(termo) || normalizar(i.resumo).includes(termo)) : listaCompleta;
 
         listaHistorico.innerHTML = '';
-
-        const semNadaCadastrado = listaCompleta.length === 0;
-        const semResultadoBusca = !semNadaCadastrado && lista.length === 0;
-
-        histVazio.style.display = semNadaCadastrado ? 'flex' : 'none';
-        histSemResultado.style.display = semResultadoBusca ? 'flex' : 'none';
+        histVazio.style.display = listaCompleta.length === 0 ? 'flex' : 'none';
+        histSemResultado.style.display = (listaCompleta.length > 0 && lista.length === 0) ? 'flex' : 'none';
         listaHistorico.style.display = lista.length === 0 ? 'none' : 'flex';
-        campoBuscaHistorico.parentElement.style.display = semNadaCadastrado ? 'none' : 'flex';
+        campoBuscaHistorico.parentElement.style.display = listaCompleta.length === 0 ? 'none' : 'flex';
 
         lista.forEach(item => {
             const div = document.createElement('div');
             div.className = 'hist-item';
-            div.dataset.id = item.id;
-
-            const badgeClasse = item.tipo === 'geral' ? 'hist-badge-geral' : 'hist-badge-leroy';
-            const badgeTexto = item.tipo === 'geral' ? 'Geral' : 'Leroy';
-
             div.innerHTML = `
                 <div class="hist-item-header">
-                    <span class="hist-badge ${badgeClasse}">${badgeTexto}</span>
+                    <span class="hist-badge ${item.tipo === 'geral' ? 'hist-badge-geral' : 'hist-badge-leroy'}">${item.tipo === 'geral' ? 'Geral' : 'Leroy'}</span>
                     <span class="hist-ticket"><i class="mdi mdi-ticket-outline"></i> ${escaparHtml(item.ticket)}</span>
-                    <span class="hist-time">${formatarDataExibicao(item.timestamp)}</span>
+                    <span class="hist-time">${new Date(item.timestamp).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</span>
                 </div>
                 <div class="hist-resumo">${escaparHtml(item.resumo)}</div>
                 <div class="hist-actions">
-                    <button type="button" class="hist-btn hist-recopiar" title="Copiar de novo">
-                        <i class="mdi mdi-content-copy"></i>
-                    </button>
-                    <button type="button" class="hist-btn hist-restaurar" title="Restaurar nos campos">
-                        <i class="mdi mdi-restore"></i>
-                    </button>
-                    <button type="button" class="hist-btn hist-excluir" title="Excluir do histórico">
-                        <i class="mdi mdi-trash-can-outline"></i>
-                    </button>
-                </div>
-            `;
-
-            div.querySelector('.hist-recopiar').addEventListener('click', () => recopiarDoHistorico(item.id));
+                    <button type="button" class="hist-btn hist-recopiar" title="Copiar de novo"><i class="mdi mdi-content-copy"></i></button>
+                    <button type="button" class="hist-btn hist-restaurar" title="Restaurar nos campos"><i class="mdi mdi-restore"></i></button>
+                    <button type="button" class="hist-btn hist-excluir" title="Excluir do histórico"><i class="mdi mdi-trash-can-outline"></i></button>
+                </div>`;
+            div.querySelector('.hist-recopiar').addEventListener('click', () => {
+                const i = obterHistorico().find(x => x.id === item.id);
+                if(i) copiarTexto(i.texto, ROTULOS_TIPO[i.tipo]);
+            });
             div.querySelector('.hist-restaurar').addEventListener('click', () => restaurarDoHistorico(item.id));
             div.querySelector('.hist-excluir').addEventListener('click', () => excluirDoHistorico(item.id));
-
             listaHistorico.appendChild(div);
         });
     };
 
     campoBuscaHistorico.addEventListener('input', renderizarHistorico);
 
-    // ==========================================
-    // LIMPAR HISTÓRICO
-    // ==========================================
-    let aguardandoConfirmacaoLimpeza = false;
-    let timeoutConfirmacaoLimpeza = null;
-
-    const resetarConfirmacaoLimpeza = () => {
-        aguardandoConfirmacaoLimpeza = false;
-        btnLimparHistorico.classList.remove('confirming');
-        txtLimparHistorico.textContent = 'Limpar';
-        clearTimeout(timeoutConfirmacaoLimpeza);
-    };
-
+    let timeoutLimpeza = null;
     btnLimparHistorico.addEventListener('click', () => {
         if (obterHistorico().length === 0) return;
-
-        if (!aguardandoConfirmacaoLimpeza) {
-            aguardandoConfirmacaoLimpeza = true;
+        if (!btnLimparHistorico.classList.contains('confirming')) {
             btnLimparHistorico.classList.add('confirming');
             txtLimparHistorico.textContent = 'Confirmar?';
-            timeoutConfirmacaoLimpeza = setTimeout(resetarConfirmacaoLimpeza, 3000);
+            timeoutLimpeza = setTimeout(() => {
+                btnLimparHistorico.classList.remove('confirming');
+                txtLimparHistorico.textContent = 'Limpar';
+            }, 3000);
             return;
         }
-
         salvarHistoricoCompleto([]);
-        resetarConfirmacaoLimpeza();
+        clearTimeout(timeoutLimpeza);
+        btnLimparHistorico.classList.remove('confirming');
+        txtLimparHistorico.textContent = 'Limpar';
         renderizarHistorico();
         mostrarToast('Histórico limpo!');
     });
 
-    // ==========================================
-    // AÇÕES PRINCIPAIS (Copiar e Limpar)
-    // ==========================================
-    const executarCopia = () => {
+    // AÇÕES GLOBAIS DE BOTÕES
+    const executarCopiaPrincipal = () => {
         if (modoAtivo === 'historico') return; 
         if (!validarAntesDeCopiar()) return;
-
+        
         const texto = modoAtivo === 'geral' ? gerarTextoGeral() : gerarTextoLeroy();
         adicionarAoHistorico(texto);
         copiarTexto(texto, ROTULOS_TIPO[modoAtivo]);
     };
 
-    btnCopiar.addEventListener('click', executarCopia);
+    btnCopiar.addEventListener('click', executarCopiaPrincipal);
+
+    btnCopiarGeralLeroy.addEventListener('click', () => {
+        if (!validarAntesDeCopiar()) return;
+        const texto = gerarTextoLeroyParaGeral();
+        adicionarAoHistorico(texto, 'leroyGeral');
+        copiarTexto(texto, ROTULOS_TIPO['leroyGeral']);
+    });
 
     document.addEventListener('keydown', (e) => {
-        const teclaCopiar = (e.ctrlKey || e.metaKey) && e.key === 'Enter';
-        if (teclaCopiar && !btnCopiar.disabled) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !btnCopiar.disabled) {
             e.preventDefault();
-            executarCopia();
+            executarCopiaPrincipal();
         }
     });
 
     btnLimpar.addEventListener('click', () => {
         if (modoAtivo === 'geral') {
-            campoData.value = '';
-            campoTicket.value = '';
-            campoContato.selectedIndex = 0;
-            campoDescricao.value = '';
-            campoStatus.selectedIndex = 0;
-            campoQueda.selectedIndex = 0;
+            campoData.value = ''; campoTicket.value = ''; campoContato.selectedIndex = 0;
+            campoDescricao.value = ''; campoStatus.selectedIndex = 0; campoQueda.selectedIndex = 0;
             salvarRascunhoGeral();
         } else if (modoAtivo === 'leroy') {
-            lrTicket.value = '';
-            lrDescricao.value = '';
-            lrFila.value = '';
-            lrHorario.value = '';
-            lrAcionamento.value = '';
-            lrAcionamentoBase.value = '';
+            lrTicket.value = ''; lrDescricao.value = ''; lrFila.value = '';
+            lrHorario.value = ''; lrAcionamento.value = ''; lrAcionamentoBase.value = '';
             salvarRascunhoLeroy();
         }
     });
-
-    renderizarHistorico();
 });

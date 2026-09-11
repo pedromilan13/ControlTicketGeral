@@ -40,7 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const printReminderOverlay = document.getElementById('printReminderOverlay');
     const printReminderTicket = document.getElementById('printReminderTicket');
     const btnConfirmarPrint = document.getElementById('btnConfirmarPrint');
-    const btnAdiarPrint = document.getElementById('btnAdiarPrint');
 
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -429,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const salvarHistoricoCompleto = (lista) => localStorage.setItem(HISTORICO_CHAVE, JSON.stringify(lista));
 
-    const montarRegistroHistorico = (texto, tipoOverride = null) => {
+    const montarRegistroHistorico = (texto, tipoOverride = null, printAnexado = false) => {
         const tipoFinal = tipoOverride || modoAtivo;
         if (tipoFinal === 'geral') {
             return {
@@ -447,16 +446,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return {
             id: Date.now(), tipo: 'leroy', timestamp: Date.now(),
             ticket: lrTicket.value.trim() || 'N/A', resumo: `${lrDescricao.value.trim() || 'Sem descrição'} · ${lrFila.value.trim() || 'N/A'}`, texto,
-            // printAnexado começa como pendente: só vira true quando o analista confirma
-            // que anexou o print do acionamento ao chamado (lembrete pós-cópia ou histórico).
-            printAnexado: false,
+            // O acionamento Leroy só é copiado depois que o analista confirma o print
+            // (ver btnConfirmarPrint), então printAnexado já nasce true nesse fluxo.
+            // O campo continua existindo para permitir correção manual pelo Histórico.
+            printAnexado,
             campos: { ticket: lrTicket.value, contato: CONTATO_LEROY, descricao: lrDescricao.value, fila: lrFila.value, horario: lrHorario.value, acionamento: lrAcionamento.value, analista: lrAnalista.value }
         };
     };
 
-    const adicionarAoHistorico = (texto, tipoOverride = null) => {
+    const adicionarAoHistorico = (texto, tipoOverride = null, printAnexado = false) => {
         const lista = obterHistorico();
-        const registro = montarRegistroHistorico(texto, tipoOverride);
+        const registro = montarRegistroHistorico(texto, tipoOverride, printAnexado);
         lista.unshift(registro);
         if (lista.length > HISTORICO_LIMITE) lista.length = HISTORICO_LIMITE;
         salvarHistoricoCompleto(lista);
@@ -575,19 +575,18 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrarToast('Histórico limpo!');
     });
 
-    // LEMBRETE DE PRINT DO ACIONAMENTO (Leroy)
-    // Fluxo: ao copiar um registro da aba Leroy, o analista vê um checkpoint pedindo
-    // confirmação de que já anexou o print ao chamado. Se ele adiar ou simplesmente
-    // fechar o widget, o item fica marcado como pendente — contabilizado num badge na
-    // aba "Acion. Leroy" e sinalizado no Histórico até alguém confirmar manualmente.
-    let idLembretePrintAtivo = null;
-
+    // CONFIRMAÇÃO OBRIGATÓRIA DE PRINT DO ACIONAMENTO (Leroy)
+    // Fluxo: ao clicar em "Copiar Leroy", a cópia NÃO acontece ainda. Primeiro aparece
+    // o checkpoint pedindo a confirmação de que o print do acionamento já foi anexado
+    // ao chamado. Só depois desse clique o template é gerado, copiado e vai pro
+    // Histórico — já com printAnexado true. Sem atalho, sem "lembrar depois".
     const atualizarBadgePendentes = () => {
         const pendentes = obterHistorico().filter(i => i.tipo === 'leroy' && i.printAnexado === false).length;
         badgeLeroyPendente.textContent = pendentes > 9 ? '9+' : String(pendentes);
         badgeLeroyPendente.classList.toggle('show', pendentes > 0);
     };
 
+    // Mantido para permitir correção manual pelo Histórico, caso alguém marque errado.
     const marcarPrintAnexado = (id, anexado) => {
         const lista = obterHistorico();
         const item = lista.find(i => i.id === id);
@@ -598,8 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modoAtivo === 'historico') renderizarHistorico();
     };
 
-    const abrirLembretePrint = (id, ticket) => {
-        idLembretePrintAtivo = id;
+    const abrirLembretePrint = (ticket) => {
         printReminderTicket.textContent = ticket || 'N/A';
         printReminderOverlay.classList.add('show');
         printReminderOverlay.setAttribute('aria-hidden', 'false');
@@ -608,31 +606,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const fecharLembretePrint = () => {
         printReminderOverlay.classList.remove('show');
         printReminderOverlay.setAttribute('aria-hidden', 'true');
-        idLembretePrintAtivo = null;
     };
 
     btnConfirmarPrint.addEventListener('click', () => {
-        if (idLembretePrintAtivo !== null) marcarPrintAnexado(idLembretePrintAtivo, true);
+        const texto = gerarTextoLeroy();
+        adicionarAoHistorico(texto, null, true);
+        copiarTexto(texto, ROTULOS_TIPO['leroy']);
+        atualizarBadgePendentes();
         fecharLembretePrint();
-        mostrarToast('Print confirmado, obrigado!');
-    });
-
-    btnAdiarPrint.addEventListener('click', () => {
-        fecharLembretePrint();
-        mostrarToast('Ok — segue pendente no histórico até você anexar', 'erro');
     });
 
     // AÇÕES GLOBAIS DE BOTÕES
     const executarCopiaPrincipal = () => {
         if (modoAtivo === 'historico') return; 
         if (!validarAntesDeCopiar()) return;
-        
-        const texto = modoAtivo === 'geral' ? gerarTextoGeral() : gerarTextoLeroy();
-        const registro = adicionarAoHistorico(texto);
-        copiarTexto(texto, ROTULOS_TIPO[modoAtivo]);
-        atualizarBadgePendentes();
 
-        if (modoAtivo === 'leroy') abrirLembretePrint(registro.id, registro.ticket);
+        if (modoAtivo === 'leroy') {
+            abrirLembretePrint(lrTicket.value.trim());
+            return; // a cópia real só ocorre depois do clique em "Já anexei — copiar"
+        }
+
+        const texto = gerarTextoGeral();
+        adicionarAoHistorico(texto);
+        copiarTexto(texto, ROTULOS_TIPO['geral']);
     };
 
     btnCopiar.addEventListener('click', executarCopiaPrincipal);

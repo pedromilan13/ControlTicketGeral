@@ -400,5 +400,3 @@ textarea.form-control { resize: none; height: 80px; padding-top: 14px; }
 .print-reminder-card p strong { color: var(--warning); font-weight: 700; }
 
 .print-reminder-actions { display: flex; flex-direction: column; gap: 8px; }
-.btn-print-adiar { background: transparent; border: none; color: var(--text-muted); font-size: 12.5px; font-weight: 600; padding: 8px; cursor: pointer; transition: color 0.2s ease; }
-.btn-print-adiar:hover { color: var(--text-main); text-decoration: underline; }

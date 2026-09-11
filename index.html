@@ -269,18 +269,17 @@
             </button>
         </footer>
 
-        <!-- OVERLAY: LEMBRETE DE PRINT DO ACIONAMENTO -->
+        <!-- OVERLAY: CONFIRMAÇÃO OBRIGATÓRIA DE PRINT DO ACIONAMENTO -->
         <div class="print-reminder-overlay" id="printReminderOverlay" role="alertdialog" aria-labelledby="printReminderTitulo" aria-hidden="true">
             <div class="print-reminder-card">
                 <div class="print-reminder-icon">
                     <i class="mdi mdi-image-plus-outline"></i>
                 </div>
-                <h3 id="printReminderTitulo">Anexe o print do acionamento</h3>
-                <p>Antes de seguir, anexe o print do acionamento ao chamado <strong id="printReminderTicket">—</strong>.</p>
+                <h3 id="printReminderTitulo">Anexe o print antes de copiar</h3>
+                <p>Anexe agora o print do acionamento ao chamado <strong id="printReminderTicket">—</strong>. O template só é copiado depois da confirmação.</p>
                 <div class="print-reminder-actions">
-                    <button type="button" class="btn-print-adiar" id="btnAdiarPrint">Lembrar depois</button>
                     <button type="button" class="btn btn-primary" id="btnConfirmarPrint">
-                        <i class="mdi mdi-check-circle-outline"></i> Já anexei
+                        <i class="mdi mdi-check-circle-outline"></i> Já anexei — copiar
                     </button>
                 </div>
             </div>

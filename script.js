@@ -36,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const txtLimparHistorico = document.getElementById('txtLimparHistorico');
     const campoBuscaHistorico = document.getElementById('campoBuscaHistorico');
 
-    const badgeLeroyPendente = document.getElementById('badgeLeroyPendente');
     const printReminderOverlay = document.getElementById('printReminderOverlay');
     const printReminderTicket = document.getElementById('printReminderTicket');
     const btnConfirmarPrint = document.getElementById('btnConfirmarPrint');
@@ -428,7 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const salvarHistoricoCompleto = (lista) => localStorage.setItem(HISTORICO_CHAVE, JSON.stringify(lista));
 
-    const montarRegistroHistorico = (texto, tipoOverride = null, printAnexado = false) => {
+    const montarRegistroHistorico = (texto, tipoOverride = null) => {
         const tipoFinal = tipoOverride || modoAtivo;
         if (tipoFinal === 'geral') {
             return {
@@ -446,17 +445,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return {
             id: Date.now(), tipo: 'leroy', timestamp: Date.now(),
             ticket: lrTicket.value.trim() || 'N/A', resumo: `${lrDescricao.value.trim() || 'Sem descrição'} · ${lrFila.value.trim() || 'N/A'}`, texto,
-            // O acionamento Leroy só é copiado depois que o analista confirma o print
-            // (ver btnConfirmarPrint), então printAnexado já nasce true nesse fluxo.
-            // O campo continua existindo para permitir correção manual pelo Histórico.
-            printAnexado,
             campos: { ticket: lrTicket.value, contato: CONTATO_LEROY, descricao: lrDescricao.value, fila: lrFila.value, horario: lrHorario.value, acionamento: lrAcionamento.value, analista: lrAnalista.value }
         };
     };
 
-    const adicionarAoHistorico = (texto, tipoOverride = null, printAnexado = false) => {
+    const adicionarAoHistorico = (texto, tipoOverride = null) => {
         const lista = obterHistorico();
-        const registro = montarRegistroHistorico(texto, tipoOverride, printAnexado);
+        const registro = montarRegistroHistorico(texto, tipoOverride);
         lista.unshift(registro);
         if (lista.length > HISTORICO_LIMITE) lista.length = HISTORICO_LIMITE;
         salvarHistoricoCompleto(lista);
@@ -466,7 +461,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const excluirDoHistorico = (id) => {
         salvarHistoricoCompleto(obterHistorico().filter(item => item.id !== id));
         renderizarHistorico();
-        atualizarBadgePendentes();
     };
 
     const restaurarDoHistorico = (id) => {
@@ -509,39 +503,22 @@ document.addEventListener('DOMContentLoaded', () => {
         campoBuscaHistorico.parentElement.style.display = listaCompleta.length === 0 ? 'none' : 'flex';
 
         lista.forEach(item => {
-            // Compatibilidade com registros antigos (sem o campo printAnexado): tratamos
-            // qualquer valor diferente de "false" como já resolvido, para não sinalizar
-            // pendência retroativa em chamados de antes desse recurso existir.
-            const printOk = item.tipo !== 'leroy' || item.printAnexado !== false;
-
             const div = document.createElement('div');
-            div.className = `hist-item${item.tipo === 'leroy' && !printOk ? ' hist-item-pendente' : ''}`;
-
-            const badgePrint = item.tipo === 'leroy'
-                ? (printOk
-                    ? `<span class="hist-badge hist-badge-print-ok"><i class="mdi mdi-check-circle-outline"></i> Print ok</span>`
-                    : `<span class="hist-badge hist-badge-print-pendente"><i class="mdi mdi-image-off-outline"></i> Print pendente</span>`)
-                : '';
+            div.className = 'hist-item';
 
             div.innerHTML = `
                 <div class="hist-item-header">
                     <span class="hist-badge ${item.tipo === 'geral' ? 'hist-badge-geral' : 'hist-badge-leroy'}">${item.tipo === 'geral' ? 'Geral' : 'Leroy'}</span>
-                    ${badgePrint}
                     <span class="hist-ticket"><i class="mdi mdi-ticket-outline"></i> ${escaparHtml(item.ticket)}</span>
                     <span class="hist-time">${new Date(item.timestamp).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</span>
                 </div>
                 <div class="hist-resumo">${escaparHtml(item.resumo)}</div>
                 <div class="hist-actions">
-                    ${item.tipo === 'leroy' ? `<button type="button" class="hist-btn hist-marcar-print" title="${printOk ? 'Marcar print como pendente' : 'Marcar print como anexado'}"><i class="mdi ${printOk ? 'mdi-image-off-outline' : 'mdi-image-check-outline'}"></i></button>` : ''}
                     <button type="button" class="hist-btn hist-recopiar" title="Copiar de novo"><i class="mdi mdi-content-copy"></i></button>
                     <button type="button" class="hist-btn hist-restaurar" title="Restaurar nos campos"><i class="mdi mdi-restore"></i></button>
                     <button type="button" class="hist-btn hist-excluir" title="Excluir do histórico"><i class="mdi mdi-trash-can-outline"></i></button>
                 </div>`;
 
-            const btnMarcarPrint = div.querySelector('.hist-marcar-print');
-            if (btnMarcarPrint) {
-                btnMarcarPrint.addEventListener('click', () => marcarPrintAnexado(item.id, !printOk));
-            }
             div.querySelector('.hist-recopiar').addEventListener('click', () => {
                 const i = obterHistorico().find(x => x.id === item.id);
                 if(i) copiarTexto(i.texto, ROTULOS_TIPO[i.tipo]);
@@ -571,32 +548,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btnLimparHistorico.classList.remove('confirming');
         txtLimparHistorico.textContent = 'Limpar';
         renderizarHistorico();
-        atualizarBadgePendentes();
         mostrarToast('Histórico limpo!');
     });
 
     // CONFIRMAÇÃO OBRIGATÓRIA DE PRINT DO ACIONAMENTO (Leroy)
     // Fluxo: ao clicar em "Copiar Leroy", a cópia NÃO acontece ainda. Primeiro aparece
     // o checkpoint pedindo a confirmação de que o print do acionamento já foi anexado
-    // ao chamado. Só depois desse clique o template é gerado, copiado e vai pro
-    // Histórico — já com printAnexado true. Sem atalho, sem "lembrar depois".
-    const atualizarBadgePendentes = () => {
-        const pendentes = obterHistorico().filter(i => i.tipo === 'leroy' && i.printAnexado === false).length;
-        badgeLeroyPendente.textContent = pendentes > 9 ? '9+' : String(pendentes);
-        badgeLeroyPendente.classList.toggle('show', pendentes > 0);
-    };
-
-    // Mantido para permitir correção manual pelo Histórico, caso alguém marque errado.
-    const marcarPrintAnexado = (id, anexado) => {
-        const lista = obterHistorico();
-        const item = lista.find(i => i.id === id);
-        if (!item || item.tipo !== 'leroy') return;
-        item.printAnexado = anexado;
-        salvarHistoricoCompleto(lista);
-        atualizarBadgePendentes();
-        if (modoAtivo === 'historico') renderizarHistorico();
-    };
-
+    // ao chamado. Só depois desse clique o template é gerado e copiado.
     const abrirLembretePrint = (ticket) => {
         printReminderTicket.textContent = ticket || 'N/A';
         printReminderOverlay.classList.add('show');
@@ -610,9 +568,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnConfirmarPrint.addEventListener('click', () => {
         const texto = gerarTextoLeroy();
-        adicionarAoHistorico(texto, null, true);
+        adicionarAoHistorico(texto);
         copiarTexto(texto, ROTULOS_TIPO['leroy']);
-        atualizarBadgePendentes();
         fecharLembretePrint();
     });
 
@@ -661,6 +618,4 @@ document.addEventListener('DOMContentLoaded', () => {
             salvarRascunhoLeroy();
         }
     });
-
-    atualizarBadgePendentes();
 });

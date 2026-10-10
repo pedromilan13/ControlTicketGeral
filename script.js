@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { descricao: 'Conferência de itens', fila: 'N2 SAP EWM' },
         { descricao: 'Check-out TU/DT', fila: 'N2 SAP EWM' },
         { descricao: 'LOG Devolução Cliente', fila: 'N2 SAP EWM' },
-        { descricao: 'Conferência de itens', fila: 'N2 SAP EWM' },
+        { descricao: 'Conferência de itens', fila: 'N2 SAP EWM' }
     ];
 
     const normalizar = (texto) => texto.trim().toLowerCase();

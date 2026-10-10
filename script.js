@@ -87,7 +87,13 @@ document.addEventListener('DOMContentLoaded', () => {
         { descricao: 'Agendamento recebimento', fila: 'N2 SAP EWM' },
         { descricao: 'Pedido nao integrado no ewm', fila: 'N2 SAP EWM' },
         { descricao: 'NF Sem Inbound EWM', fila: 'N2 SAP MM' },
-        { descricao: 'Remessa fora do Cockpit', fila: 'N2 SAP TM/LES' }
+        { descricao: 'Remessa fora do Cockpit', fila: 'N2 SAP TM/LES' },
+        { descricao: 'Delivery Order', fila: 'N2 SAP SD' },
+        { descricao: 'Integração OBM/LMB', fila: 'N2 SAP EWM' },
+        { descricao: 'Conferência de itens', fila: 'N2 SAP EWM' },
+        { descricao: 'Check-out TU/DT', fila: 'N2 SAP EWM' },
+        { descricao: 'LOG Devolução Cliente', fila: 'N2 SAP EWM' },
+        { descricao: 'Conferência de itens', fila: 'N2 SAP EWM' },
     ];
 
     const normalizar = (texto) => texto.trim().toLowerCase();
